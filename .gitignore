@@ -1,0 +1,11 @@
+.env
+backend/.env
+backend/__pycache__/
+backend/*.pyc
+backend/local_data.json
+*.log
+.venv/
+venv/
+node_modules/
+.DS_Store
+Thumbs.db
