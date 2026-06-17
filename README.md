@@ -24,6 +24,7 @@ The main showcase feature is the AI Competitor Intelligence Command Center. Add 
 - Production CORS configuration through `ALLOWED_ORIGINS`.
 - Render backend deployment config in `render.yaml`.
 - Vercel frontend deployment config in `frontend/vercel.json`.
+- Presentation-safe frontend demo mode when the deployed API route is unavailable, so charts, analyzer results, battlecards, reports, and intake workflows still work during reviews.
 
 ## Project Structure
 
@@ -173,5 +174,6 @@ cd "C:\Users\Rehan Raza\OneDrive\Desktop\AI_Business_Competition_Analyzer"
 
 - The frontend uses `http://127.0.0.1:5000` only on localhost.
 - In production, the frontend calls `/api`, and Vercel rewrites those calls to Render.
+- If `/api` or the Render fallback is unavailable, the frontend automatically switches to built-in presentation data and labels the sidebar status as `Demo Mode`.
 - The backend still works without MongoDB, but Render's filesystem is ephemeral, so MongoDB Atlas is required for persistent production data.
 - The app works without Gemini, but battlecards and recommendations use the rules engine until `GEMINI_API_KEY` is set.

@@ -21,12 +21,12 @@
       </div>
 
       <nav class="nav-list">
-        <a class="active" href="#intelligence"><i data-lucide="radar"></i><span>Intelligence</span></a>
-        <a href="#command"><i data-lucide="brain-circuit"></i><span>Analyzer</span></a>
-        <a href="#battlecard"><i data-lucide="shield-check"></i><span>Battlecards</span></a>
-        <a href="#portfolio"><i data-lucide="line-chart"></i><span>Trends</span></a>
-        <a href="#intake"><i data-lucide="database-zap"></i><span>Signal Intake</span></a>
-        <a href="#reports"><i data-lucide="file-text"></i><span>Reports</span></a>
+        <a class="active" href="#dashboard" data-view-link="dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></a>
+        <a href="#analyzer" data-view-link="analyzer"><i data-lucide="brain-circuit"></i><span>Analyzer</span></a>
+        <a href="#battlecard" data-view-link="battlecard"><i data-lucide="shield-check"></i><span>Battlecards</span></a>
+        <a href="#market" data-view-link="market"><i data-lucide="line-chart"></i><span>Market</span></a>
+        <a href="#intake" data-view-link="intake"><i data-lucide="database-zap"></i><span>Signal Intake</span></a>
+        <a href="#reports" data-view-link="reports"><i data-lucide="file-text"></i><span>Reports</span></a>
       </nav>
 
       <div class="sidebar-panel">
@@ -55,7 +55,7 @@
 
       <p class="system-message" id="systemMessage" role="status"></p>
 
-      <section class="intelligence-board" id="intelligence" aria-label="AI competitor intelligence overview">
+      <section class="intelligence-board view-section" id="dashboard" data-view="dashboard" aria-label="AI competitor intelligence overview">
         <div class="panel intelligence-summary">
           <div class="panel-heading">
             <div>
@@ -137,7 +137,7 @@
         </div>
       </section>
 
-      <section class="command-panel analyzer-panel" id="command" aria-label="Business competition analyzer">
+      <section class="command-panel analyzer-panel view-section" id="analyzer" data-view="analyzer" aria-label="Business competition analyzer">
         <form class="analysis-form" id="analysisForm">
           <div class="command-copy">
             <p class="eyebrow">Main analyzer</p>
@@ -229,7 +229,7 @@
         </div>
       </section>
 
-      <section class="metric-grid" aria-label="Key metrics">
+      <section class="metric-grid view-section" id="metricsBoard" data-view="dashboard" aria-label="Key metrics">
         <article class="metric-card">
           <span>Tracked Competitors</span>
           <strong id="trackedCompetitors">0</strong>
@@ -252,7 +252,7 @@
         </article>
       </section>
 
-      <section class="insight-strip" aria-label="Executive summary">
+      <section class="insight-strip view-section" id="insightsBoard" data-view="dashboard" aria-label="Executive summary">
         <article>
           <span>Top growth threat</span>
           <strong id="topGrowth">Loading</strong>
@@ -270,7 +270,7 @@
         </article>
       </section>
 
-      <section class="feature-grid" id="battlecard">
+      <section class="feature-grid view-section" id="battlecard" data-view="battlecard">
         <form class="panel battlecard-control" id="battlecardForm">
           <div class="panel-heading">
             <div>
@@ -335,7 +335,7 @@
         </div>
       </section>
 
-      <section class="workspace-grid" id="portfolio">
+      <section class="workspace-grid view-section" id="market" data-view="market">
         <div class="panel chart-panel">
           <div class="panel-heading">
             <div>
@@ -357,7 +357,7 @@
         </div>
       </section>
 
-      <section class="workspace-grid lower-grid">
+      <section class="workspace-grid lower-grid view-section" id="portfolioTable" data-view="market">
         <div class="panel">
           <div class="panel-heading table-heading">
             <div>
@@ -399,7 +399,7 @@
         </div>
       </section>
 
-      <section class="intake-grid" id="intake">
+      <section class="intake-grid view-section" id="intake" data-view="intake">
         <form class="panel form-panel" id="competitorForm">
           <div class="panel-heading">
             <div>
@@ -508,7 +508,7 @@
         </div>
       </section>
 
-      <section class="workspace-grid lower-grid" id="reports">
+      <section class="workspace-grid lower-grid view-section" id="reports" data-view="reports">
         <div class="panel">
           <div class="panel-heading">
             <div>
