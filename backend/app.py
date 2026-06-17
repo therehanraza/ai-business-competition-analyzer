@@ -969,12 +969,28 @@ def build_business_analysis(payload):
 
     competitors = relevant_competitors_for_profile(profile)
     market_signals = store.all("market_signals")
+    region_signals = [
+        signal
+        for signal in market_signals
+        if clean_string(signal.get("area")).lower() == profile["region"].lower()
+    ]
     category_signals = [
         signal
         for signal in market_signals
         if clean_string(signal.get("category")).lower() == profile["category"].lower()
     ] or market_signals
-    strongest_signal = max(category_signals, key=lambda item: as_float(item.get("demand")), default={})
+    selected_region = profile["region"].lower()
+    if region_signals:
+        strongest_signal = max(region_signals, key=lambda item: as_float(item.get("demand")))
+    elif selected_region and selected_region != "global":
+        strongest_signal = {
+            "area": profile["region"],
+            "demand": 78,
+            "trend": "Selected market",
+            "category": profile["category"],
+        }
+    else:
+        strongest_signal = max(category_signals, key=lambda item: as_float(item.get("demand")), default={})
 
     threats = sorted(
         [competitor_threat(profile, competitor) for competitor in competitors],
@@ -1344,7 +1360,7 @@ def local_competitor_enrichment(payload):
                 "positioning": "ChatGPT is OpenAI's AI assistant platform for individuals, teams, developers, and enterprises.",
                 "current_price": 20,
                 "previous_price": 20,
-                "price_summary": "Plan range: Free, Go $8/mo, Plus $20/mo, Pro $200/mo, Business per user, Enterprise custom.",
+                "price_summary": "Plan range: Free, Go, Plus, Pro, Business, Enterprise.",
                 "data_quality": "Known public pricing profile",
                 "funding_news": "OpenAI is a major AI platform company; use funding/news signals only when connected to live sources.",
                 "product_launch": "ChatGPT plans differ by usage limits, model access, team workspace controls, and enterprise security.",

@@ -1033,11 +1033,11 @@ body {
 }
 
 .main {
-  gap: 18px;
+  gap: 16px;
 }
 
 .topbar {
-  min-height: 132px;
+  min-height: 118px;
   align-items: center;
   padding: 26px;
   border: 1px solid var(--line);
@@ -1127,6 +1127,63 @@ li,
   background:
     linear-gradient(145deg, rgba(45, 212, 191, 0.08), transparent 42%),
     var(--surface);
+}
+
+.quick-analyzer {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) minmax(190px, 0.8fr) auto;
+  gap: 12px;
+  align-items: end;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--surface-2);
+}
+
+.advanced-fields {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.advanced-fields summary {
+  color: #5eead4;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.advanced-fields[open] summary {
+  margin-bottom: 14px;
+}
+
+.intelligence-board {
+  align-items: stretch;
+}
+
+.intelligence-summary {
+  grid-row: auto;
+}
+
+.intelligence-chart {
+  min-height: 290px;
+}
+
+.strategy-columns {
+  min-height: 170px;
+}
+
+.feature-grid {
+  grid-template-columns: minmax(340px, 0.48fr) minmax(0, 1.52fr);
+}
+
+.battlecard-control,
+.battlecard-result {
+  height: fit-content;
+}
+
+.workspace-grid {
+  align-items: stretch;
 }
 
 .metric-card,
@@ -1551,6 +1608,10 @@ body:not(.sidebar-open) .nav-list svg {
     padding: 12px 14px;
     justify-content: flex-start;
   }
+
+  .quick-analyzer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
@@ -1574,5 +1635,9 @@ body:not(.sidebar-open) .nav-list svg {
 
   .plan-grid-heading span {
     text-align: left;
+  }
+
+  .quick-analyzer {
+    grid-template-columns: 1fr;
   }
 }

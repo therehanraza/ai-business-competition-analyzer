@@ -144,27 +144,50 @@
         <form class="analysis-form" id="analysisForm">
           <div class="command-copy">
             <p class="eyebrow">Main analyzer</p>
-            <h2>Analyze a business against competitors</h2>
-            <p>Enter one business profile and generate competition pressure, market opportunity, SWOT, ranked threats, and an action plan.</p>
+            <h2>AI business analyzer</h2>
+            <p>Enter a company or product name. AI fills the business profile, compares it with tracked competitors, and creates pressure, opportunity, SWOT, threats, and action plan.</p>
           </div>
 
-          <div class="form-grid">
-            <label>Business Name<input name="business_name" required value="Nova Retail AI"></label>
-            <label>Category<input name="category" required value="Retail Analytics"></label>
-            <label>Region<input name="region" required value="North America"></label>
-            <label>Monthly Price<input name="price" type="number" min="0" step="1" required value="179"></label>
-            <label>Product Score<input name="product_score" type="number" min="0" max="100" step="1" value="82"></label>
-            <label>Target Customer<input name="target_customer" value="mid-market retailers"></label>
+          <div class="quick-analyzer">
+            <label>Company / Product Name<input id="quickBusinessName" type="text" value="Nova Retail AI" placeholder="ChatGPT, Shopify, HubSpot"></label>
+            <label>Website<input id="quickBusinessWebsite" type="url" placeholder="https://company.com"></label>
+            <label>Target Country / Region
+              <select id="quickBusinessRegion">
+                <option>India</option>
+                <option>Global</option>
+                <option>United States</option>
+                <option>United Kingdom</option>
+                <option>Europe</option>
+                <option>Asia Pacific</option>
+                <option>Middle East</option>
+                <option>Latin America</option>
+              </select>
+            </label>
+            <button class="primary-button" id="quickAnalyzeButton" type="button">
+              <i data-lucide="sparkles"></i><span>AI Fill & Analyze</span>
+            </button>
           </div>
-          <label>Competitive Advantage<textarea name="advantage" rows="3">faster deployment and simple dashboards</textarea></label>
-          <label>Business Goal
-            <select name="objective">
-              <option>Find the best competitive position for market entry</option>
-              <option>Prepare investor-ready market analysis</option>
-              <option>Improve pricing and positioning</option>
-              <option>Build a sales strategy against competitors</option>
-            </select>
-          </label>
+
+          <details class="advanced-fields">
+            <summary>Advanced inputs AI can edit</summary>
+            <div class="form-grid">
+              <label>Business Name<input name="business_name" required value="Nova Retail AI"></label>
+              <label>Category<input name="category" required value="Retail Analytics"></label>
+              <label>Region<input name="region" required value="North America"></label>
+              <label>Comparable Monthly Price<input name="price" type="number" min="0" step="1" required value="179"></label>
+              <label>Product Score<input name="product_score" type="number" min="0" max="100" step="1" value="82"></label>
+              <label>Target Customer<input name="target_customer" value="mid-market retailers"></label>
+            </div>
+            <label>Competitive Advantage<textarea name="advantage" rows="3">faster deployment and simple dashboards</textarea></label>
+            <label>Business Goal
+              <select name="objective">
+                <option>Find the best competitive position for market entry</option>
+                <option>Prepare investor-ready market analysis</option>
+                <option>Improve pricing and positioning</option>
+                <option>Build a sales strategy against competitors</option>
+              </select>
+            </label>
+          </details>
           <div class="button-row">
             <button class="primary-button" id="analysisButton" type="submit">
               <i data-lucide="brain-circuit"></i><span>Analyze Competition</span>
@@ -420,8 +443,8 @@
             <label>Website<input name="website" placeholder="https://company.com"></label>
             <label>Target Country / Region
               <select name="region">
-                <option>Global</option>
                 <option>India</option>
+                <option>Global</option>
                 <option>United States</option>
                 <option>United Kingdom</option>
                 <option>Europe</option>

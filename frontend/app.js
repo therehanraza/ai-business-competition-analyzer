@@ -19,6 +19,7 @@ const state = {
   demoMode: false,
   enrichment: null,
   sidebarOpen: false,
+  currencyRegion: "India",
 };
 
 const colors = ["#2dd4bf", "#f59e0b", "#fb7185", "#60a5fa", "#a3e635", "#c084fc"];
@@ -33,8 +34,29 @@ function renderIcons() {
   }
 }
 
-function money(value) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value || 0);
+const currencyByRegion = {
+  Global: { currency: "USD", locale: "en-US", rate: 1 },
+  India: { currency: "INR", locale: "en-IN", rate: 83 },
+  "United States": { currency: "USD", locale: "en-US", rate: 1 },
+  "United Kingdom": { currency: "GBP", locale: "en-GB", rate: 0.79 },
+  Europe: { currency: "EUR", locale: "de-DE", rate: 0.92 },
+  "Asia Pacific": { currency: "SGD", locale: "en-SG", rate: 1.35 },
+  "Middle East": { currency: "AED", locale: "en-AE", rate: 3.67 },
+  "Latin America": { currency: "MXN", locale: "es-MX", rate: 18.2 },
+};
+
+function regionCurrency(region = state.currencyRegion) {
+  return currencyByRegion[region] || currencyByRegion.Global;
+}
+
+function money(value, region = state.currencyRegion) {
+  const config = regionCurrency(region);
+  const converted = Number(value || 0) * config.rate;
+  return new Intl.NumberFormat(config.locale, {
+    style: "currency",
+    currency: config.currency,
+    maximumFractionDigits: 0,
+  }).format(converted);
 }
 
 function number(value) {
@@ -316,12 +338,21 @@ function buildDemoAnalysis(payload) {
         ...competitor,
         threat_score: score,
         threat_level: score >= 82 ? "High" : score >= 64 ? "Medium" : "Low",
-        reason: `${competitor.name} has ${competitor.growth_rate || 0}% growth, ${competitor.product_score || 0}/100 product score, and ${money(competitor.current_price)} pricing.`,
+        reason: `${competitor.name} has ${competitor.growth_rate || 0}% growth, ${competitor.product_score || 0}/100 product score, and ${money(competitor.current_price, competitor.region || profile.region)} pricing.`,
       };
     })
     .sort((a, b) => b.threat_score - a.threat_score);
   const pressure = Math.round(average(threats.slice(0, 3), (item) => item.threat_score));
-  const bestMarket = dashboard.market_signals[0] || { area: profile.region, demand: 75 };
+  const exactRegionMarket = dashboard.market_signals.find(
+    (signal) => clean_string(signal.area).toLowerCase() === clean_string(profile.region).toLowerCase()
+  );
+  const categoryMarket = dashboard.market_signals.find(
+    (signal) => clean_string(signal.category).toLowerCase() === clean_string(profile.category).toLowerCase()
+  );
+  const bestMarket = exactRegionMarket ||
+    (clean_string(profile.region).toLowerCase() !== "global"
+      ? { area: profile.region, demand: 78, trend: "Selected market", category: profile.category }
+      : categoryMarket || { area: "Global", demand: 75, trend: "Global baseline", category: profile.category });
   const priceDelta = avgPrice ? Math.round(((profile.price - avgPrice) / avgPrice) * 100) : 0;
   return {
     source: "Local scoring model",
@@ -366,13 +397,13 @@ function buildDemoBattlecard(competitorId, objective) {
     headline: `${competitor.name} is strongest around ${competitor.positioning.toLowerCase()}, so lead with faster proof, pricing clarity, and category-specific outcomes.`,
     positioning: competitor.positioning,
     quick_stats: [
-      { label: "Price", value: money(competitor.current_price) },
+      { label: "Price", value: money(competitor.current_price, competitor.region) },
       { label: "Share", value: `${competitor.market_share || 0}%` },
       { label: "Growth", value: `${competitor.growth_rate || 0}%` },
       { label: "Signal score", value: `${Math.min(100, score)}/100` },
     ],
     strengths: [competitor.positioning, `${competitor.product_score || 0}/100 product score`, competitor.product_launch],
-    weaknesses: [`${money(competitor.current_price)} pricing creates comparison pressure.`, "Recent movement gives sales teams a chance to challenge switching cost.", competitor.funding_news],
+    weaknesses: [`${money(competitor.current_price, competitor.region)} pricing creates comparison pressure.`, "Recent movement gives sales teams a chance to challenge switching cost.", competitor.funding_news],
     talk_track: [
       `When buyers mention ${competitor.name}, anchor on speed to value and implementation simplicity.`,
       "Ask whether they need a broad enterprise suite or a focused workflow that teams adopt quickly.",
@@ -462,7 +493,7 @@ function buildLocalEnrichment(payload) {
       positioning: "ChatGPT is OpenAI's AI assistant platform for individuals, teams, developers, and enterprises.",
       current_price: 20,
       previous_price: 20,
-      price_summary: "Plan range: Free, Go $8/mo, Plus $20/mo, Pro $200/mo, Business per user, Enterprise custom.",
+      price_summary: "Plan range: Free, Go, Plus, Pro, Business, Enterprise.",
       data_quality: "Known public pricing profile",
       funding_news: "OpenAI is a major AI platform company; use funding/news signals only when connected to live sources.",
       product_launch: "ChatGPT plans differ by usage limits, model access, team workspace controls, and enterprise security.",
@@ -687,7 +718,7 @@ function renderInsights(dashboard) {
   byId("topGrowth").textContent = topGrowth?.name || "No competitor";
   byId("topGrowthDetail").textContent = topGrowth ? `${topGrowth.growth_rate || 0}% growth in ${topGrowth.region}` : "Add competitors to calculate";
   byId("pricePressure").textContent = pressure?.name || "No pricing data";
-  byId("pricePressureDetail").textContent = pressure ? `${money(Number(pressure.previous_price || 0) - Number(pressure.current_price || 0))} tracked price movement` : "Log price history";
+  byId("pricePressureDetail").textContent = pressure ? `${money(Number(pressure.previous_price || 0) - Number(pressure.current_price || 0), pressure.region)} tracked price movement` : "Log price history";
   byId("strongestMarket").textContent = strongest?.area || "No market signal";
   byId("strongestMarketDetail").textContent = strongest ? `${strongest.demand}/100 demand for ${strongest.category}` : "Add market signals";
 }
@@ -751,6 +782,31 @@ function renderAnalysis(analysis) {
 function fillSampleBusiness() {
   const form = byId("analysisForm");
   Object.entries(sampleBusiness).forEach(([key, value]) => {
+    if (form.elements[key]) {
+      form.elements[key].value = value;
+    }
+  });
+}
+
+function fillAnalysisFromProfile(profile) {
+  const form = byId("analysisForm");
+  const targetCustomer = profile.category === "AI Assistant Platform"
+    ? "individuals, teams, developers, and enterprises"
+    : `${profile.category || "business"} buyers`;
+  const advantage = profile.category === "AI Assistant Platform"
+    ? "broad model access, assistant workflows, team controls, and enterprise security"
+    : clean_string(profile.positioning, "clear positioning and faster competitive decisions");
+  const values = {
+    business_name: profile.name,
+    category: profile.category,
+    region: profile.region,
+    price: profile.current_price || 0,
+    product_score: profile.product_score || 78,
+    target_customer: targetCustomer,
+    advantage,
+    objective: "Find the best competitive position for market entry",
+  };
+  Object.entries(values).forEach(([key, value]) => {
     if (form.elements[key]) {
       form.elements[key].value = value;
     }
@@ -879,7 +935,7 @@ function renderCompetitors(competitors) {
         </div>
       </td>
       <td>${escapeHtml(competitor.region)}</td>
-      <td>${money(competitor.current_price)}</td>
+      <td>${money(competitor.current_price, competitor.region)}</td>
       <td><span class="score-pill">${escapeHtml(competitor.product_score)}/100</span></td>
       <td>${Number(competitor.growth_rate || 0)}%</td>
       <td>${Number(competitor.traffic_trend || 0)}%</td>
@@ -1023,6 +1079,29 @@ async function generateAnalysis(event = null) {
     showSystemMessage(error.message, "error");
   } finally {
     setButtonLoading(byId("analysisButton"), false);
+  }
+}
+
+async function quickAnalyzeBusiness() {
+  setButtonLoading(byId("quickAnalyzeButton"), true, "Analyzing...");
+  try {
+    const enrichment = await api("/api/enrich-competitor", {
+      method: "POST",
+      body: JSON.stringify({
+        name: byId("quickBusinessName").value,
+        website: byId("quickBusinessWebsite").value,
+        region: byId("quickBusinessRegion").value,
+      }),
+    });
+    state.currencyRegion = enrichment.profile.region || state.currencyRegion;
+    fillAnalysisFromProfile(enrichment.profile);
+    await generateAnalysis();
+    showSystemMessage(`${enrichment.profile.name} analyzed from AI-filled business profile.`, "success");
+  } catch (error) {
+    byId("analysisMessage").textContent = error.message;
+    showSystemMessage(error.message, "error");
+  } finally {
+    setButtonLoading(byId("quickAnalyzeButton"), false);
   }
 }
 
@@ -1208,14 +1287,18 @@ function fillCompetitorForm(profile) {
 function renderEnrichment(enrichment) {
   state.enrichment = enrichment;
   const profile = enrichment.profile || {};
+  state.currencyRegion = profile.region || state.currencyRegion;
   const hasPlans = Array.isArray(profile.pricing_plans) && profile.pricing_plans.length > 1;
   const priceTitle = hasPlans ? "Pricing model" : "Comparable price";
-  const priceValue = profile.price_summary || money(profile.current_price);
+  const namedPlans = Object.fromEntries((profile.pricing_plans || []).map((plan) => [plan.name, plan]));
+  const priceValue = hasPlans && namedPlans.Plus
+    ? `Plans: Free, Go ${money(namedPlans.Go?.price || 8, profile.region)}, Plus ${money(namedPlans.Plus.price, profile.region)}, Pro ${money(namedPlans.Pro?.price || 200, profile.region)}, Business ${money(namedPlans.Business?.price || 30, profile.region)}/user`
+    : profile.price_summary || money(profile.current_price, profile.region);
   const planCards = (profile.pricing_plans || []).map((plan) => `
     <article>
       <span>${escapeHtml(plan.billing || "monthly")}</span>
       <strong>${escapeHtml(plan.name || "Plan")}</strong>
-      <small>${plan.price === null || plan.price === undefined ? "Custom / varies" : money(plan.price)}</small>
+      <small>${plan.price === null || plan.price === undefined ? "Custom / varies" : money(plan.price, profile.region)}</small>
       <p>${escapeHtml(plan.note || plan.audience || "")}</p>
     </article>
   `).join("");
@@ -1352,8 +1435,15 @@ function attachEvents() {
     }
   });
   byId("analysisForm").addEventListener("submit", generateAnalysis);
+  byId("quickAnalyzeButton").addEventListener("click", quickAnalyzeBusiness);
+  byId("quickBusinessRegion").addEventListener("change", (event) => {
+    state.currencyRegion = event.target.value;
+  });
   byId("copilotForm").addEventListener("submit", askCopilot);
   byId("discoveryForm").addEventListener("submit", enrichCompetitor);
+  byId("discoveryForm").elements.region.addEventListener("change", (event) => {
+    state.currencyRegion = event.target.value;
+  });
   byId("trackEnrichedButton").addEventListener("click", trackEnrichedCompetitor);
   byId("sampleBusinessButton").addEventListener("click", () => {
     fillSampleBusiness();
