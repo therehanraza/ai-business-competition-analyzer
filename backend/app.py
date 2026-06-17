@@ -1246,6 +1246,8 @@ def parse_gemini_json(response):
 
 def infer_company_domain(name, website=""):
     text = " ".join([clean_string(name), clean_string(website)]).lower()
+    if "chatgpt" in text or "openai" in text:
+        return "AI Assistant Platform", 20
     if any(word in text for word in ["price", "repric", "billing", "chargebee", "stripe"]):
         return "Pricing Intelligence", 129
     if any(word in text for word in ["retail", "shop", "commerce", "store", "market"]):
@@ -1276,11 +1278,11 @@ def pricing_plans_for_company(name, category, current_price):
     text = name.lower()
     if "chatgpt" in text or "openai" in text:
         return [
-            {"name": "Free", "price": 0, "billing": "monthly", "audience": "individuals", "note": "Entry plan with limited access."},
-            {"name": "Go", "price": None, "billing": "monthly", "audience": "individuals", "note": "Expanded access; official price varies by country."},
-            {"name": "Plus", "price": None, "billing": "monthly", "audience": "individuals", "note": "Advanced reasoning, projects, tasks, and custom GPTs."},
-            {"name": "Pro", "price": None, "billing": "monthly", "audience": "power users", "note": "Higher usage and pro reasoning access."},
-            {"name": "Business", "price": None, "billing": "per user/month", "audience": "teams", "note": "Business workspace plan; starts at 2 users."},
+            {"name": "Free", "price": 0, "billing": "monthly", "audience": "individuals", "note": "Free individual plan with limited access."},
+            {"name": "Go", "price": 8, "billing": "monthly", "audience": "individuals", "note": "Lower-cost individual plan; localized pricing may differ by country."},
+            {"name": "Plus", "price": 20, "billing": "monthly", "audience": "individuals", "note": "Advanced intelligence, projects, tasks, custom GPTs, and expanded usage."},
+            {"name": "Pro", "price": 200, "billing": "monthly", "audience": "power users", "note": "Maximum usage, pro reasoning, deep research, agent mode, and higher limits."},
+            {"name": "Business", "price": 30, "billing": "per user/month", "audience": "teams", "note": "Team workspace; lower per-user annual billing may be available."},
             {"name": "Enterprise", "price": None, "billing": "custom", "audience": "large organizations", "note": "Custom pricing, admin, security, and enterprise controls."},
         ]
     low_price = max(0, round(current_price * 0.55))
@@ -1335,6 +1337,19 @@ def local_competitor_enrichment(payload):
         "product_launch": f"AI enrichment suggests {name} recently {launch_focus}.",
     }
     profile["pricing_plans"] = pricing_plans_for_company(name, category, current_price)
+    if "chatgpt" in name.lower() or "openai" in name.lower():
+        profile.update(
+            {
+                "category": "AI Assistant Platform",
+                "positioning": "ChatGPT is OpenAI's AI assistant platform for individuals, teams, developers, and enterprises.",
+                "current_price": 20,
+                "previous_price": 20,
+                "price_summary": "Plan range: Free, Go $8/mo, Plus $20/mo, Pro $200/mo, Business per user, Enterprise custom.",
+                "data_quality": "Known public pricing profile",
+                "funding_news": "OpenAI is a major AI platform company; use funding/news signals only when connected to live sources.",
+                "product_launch": "ChatGPT plans differ by usage limits, model access, team workspace controls, and enterprise security.",
+            }
+        )
     return {
         "source": "AI enrichment model",
         "confidence": "Estimated",
@@ -1438,9 +1453,13 @@ def ask_gemini_enrichment(payload):
 
 
 def normalize_enrichment(enrichment):
-    profile, error = competitor_payload(enrichment.get("profile", {}))
+    raw_profile = enrichment.get("profile", {})
+    profile, error = competitor_payload(raw_profile)
     if error:
         return None, error
+    for optional_field in ["price_summary", "data_quality"]:
+        if clean_string(raw_profile.get(optional_field)):
+            profile[optional_field] = clean_string(raw_profile.get(optional_field))
     raw_plans = enrichment.get("profile", {}).get("pricing_plans", [])
     if isinstance(raw_plans, list):
         profile["pricing_plans"] = [

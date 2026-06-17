@@ -389,6 +389,7 @@ function buildDemoBattlecard(competitorId, objective) {
 
 function inferDiscoveryCategory(name, website = "") {
   const text = `${name} ${website}`.toLowerCase();
+  if (text.includes("chatgpt") || text.includes("openai")) return ["AI Assistant Platform", 20];
   if (["price", "repric", "billing", "chargebee", "stripe"].some((word) => text.includes(word))) return ["Pricing Intelligence", 129];
   if (["retail", "shop", "commerce", "store", "market"].some((word) => text.includes(word))) return ["Retail Analytics", 179];
   if (["demand", "forecast", "supply", "inventory", "grid"].some((word) => text.includes(word))) return ["Demand Forecasting", 199];
@@ -410,11 +411,11 @@ function pricingPlansForCompany(name, category, currentPrice) {
   const text = name.toLowerCase();
   if (text.includes("chatgpt") || text.includes("openai")) {
     return [
-      { name: "Free", price: 0, billing: "monthly", audience: "individuals", note: "Entry plan with limited access." },
-      { name: "Go", price: null, billing: "monthly", audience: "individuals", note: "Expanded access; official price varies by country." },
-      { name: "Plus", price: null, billing: "monthly", audience: "individuals", note: "Advanced intelligence, projects, tasks, and custom GPTs." },
-      { name: "Pro", price: null, billing: "monthly", audience: "power users", note: "Higher usage and pro reasoning access." },
-      { name: "Business", price: null, billing: "per user/month", audience: "teams", note: "Team workspace plan; official price varies by billing and region." },
+      { name: "Free", price: 0, billing: "monthly", audience: "individuals", note: "Free individual plan with limited access." },
+      { name: "Go", price: 8, billing: "monthly", audience: "individuals", note: "Lower-cost individual plan; localized pricing may differ by country." },
+      { name: "Plus", price: 20, billing: "monthly", audience: "individuals", note: "Advanced intelligence, projects, tasks, custom GPTs, and expanded usage." },
+      { name: "Pro", price: 200, billing: "monthly", audience: "power users", note: "Maximum usage, pro reasoning, deep research, agent mode, and higher limits." },
+      { name: "Business", price: 30, billing: "per user/month", audience: "teams", note: "Team workspace; lower per-user annual billing may be available." },
       { name: "Enterprise", price: null, billing: "custom", audience: "large organizations", note: "Custom pricing, admin, security, and enterprise controls." },
     ];
   }
@@ -455,6 +456,18 @@ function buildLocalEnrichment(payload) {
     product_launch: `AI enrichment suggests ${name} recently expanded ${category.toLowerCase()} workflows.`,
   };
   profile.pricing_plans = pricingPlansForCompany(name, category, currentPrice);
+  if (name.toLowerCase().includes("chatgpt") || name.toLowerCase().includes("openai")) {
+    Object.assign(profile, {
+      category: "AI Assistant Platform",
+      positioning: "ChatGPT is OpenAI's AI assistant platform for individuals, teams, developers, and enterprises.",
+      current_price: 20,
+      previous_price: 20,
+      price_summary: "Plan range: Free, Go $8/mo, Plus $20/mo, Pro $200/mo, Business per user, Enterprise custom.",
+      data_quality: "Known public pricing profile",
+      funding_news: "OpenAI is a major AI platform company; use funding/news signals only when connected to live sources.",
+      product_launch: "ChatGPT plans differ by usage limits, model access, team workspace controls, and enterprise security.",
+    });
+  }
   return {
     source: "Local intelligence engine",
     confidence: "Estimated",
@@ -1195,6 +1208,9 @@ function fillCompetitorForm(profile) {
 function renderEnrichment(enrichment) {
   state.enrichment = enrichment;
   const profile = enrichment.profile || {};
+  const hasPlans = Array.isArray(profile.pricing_plans) && profile.pricing_plans.length > 1;
+  const priceTitle = hasPlans ? "Pricing model" : "Comparable price";
+  const priceValue = profile.price_summary || money(profile.current_price);
   const planCards = (profile.pricing_plans || []).map((plan) => `
     <article>
       <span>${escapeHtml(plan.billing || "monthly")}</span>
@@ -1213,7 +1229,7 @@ function renderEnrichment(enrichment) {
         <p>${escapeHtml(profile.positioning || "")}</p>
       </div>
       <div class="enrichment-stats">
-        <article><span>Main price signal</span><strong>${money(profile.current_price)}</strong></article>
+        <article class="wide-stat"><span>${priceTitle}</span><strong>${escapeHtml(priceValue)}</strong></article>
         <article><span>Score</span><strong>${escapeHtml(profile.product_score || 0)}/100</strong></article>
         <article><span>Growth</span><strong>${escapeHtml(profile.growth_rate || 0)}%</strong></article>
         <article><span>Mentions</span><strong>${number(profile.market_mentions || 0)}</strong></article>
@@ -1221,7 +1237,7 @@ function renderEnrichment(enrichment) {
       <div class="plan-grid">
         <div class="plan-grid-heading">
           <strong>Pricing plans detected</strong>
-          <span>Main price is only the comparable plan signal used in charts.</span>
+          <span>${hasPlans ? "Plans are shown separately; charts use the comparable paid plan where needed." : "Comparable price is used in charts."}</span>
         </div>
         ${planCards || `<article><strong>No plans detected</strong><p>Add pricing manually after tracking.</p></article>`}
       </div>

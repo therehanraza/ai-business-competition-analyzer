@@ -145,13 +145,18 @@ class BackendApiTest(unittest.TestCase):
         )
         self.assertEqual(enriched.status_code, 200)
         self.assertEqual(enriched.json["profile"]["name"], "ChatGPT")
+        self.assertEqual(enriched.json["profile"]["category"], "AI Assistant Platform")
         self.assertEqual(enriched.json["profile"]["region"], "India")
         self.assertTrue(enriched.json["insights"])
         self.assertIn("activity_signal", enriched.json)
-        plan_names = [plan["name"] for plan in enriched.json["profile"]["pricing_plans"]]
-        self.assertIn("Free", plan_names)
-        self.assertIn("Plus", plan_names)
-        self.assertIn("Enterprise", plan_names)
+        plans = {plan["name"]: plan for plan in enriched.json["profile"]["pricing_plans"]}
+        self.assertEqual(plans["Free"]["price"], 0)
+        self.assertEqual(plans["Go"]["price"], 8)
+        self.assertEqual(plans["Plus"]["price"], 20)
+        self.assertEqual(plans["Pro"]["price"], 200)
+        self.assertEqual(plans["Business"]["price"], 30)
+        self.assertIsNone(plans["Enterprise"]["price"])
+        self.assertIn("Plan range", enriched.json["profile"]["price_summary"])
 
         tracked = self.post_json("/api/track-competitor", {"enrichment": enriched.json})
         self.assertEqual(tracked.status_code, 201)
