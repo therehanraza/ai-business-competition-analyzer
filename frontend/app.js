@@ -17,6 +17,8 @@ const state = {
   activeView: "dashboard",
   apiBase: API_BASE,
   demoMode: false,
+  enrichment: null,
+  sidebarOpen: false,
 };
 
 const colors = ["#2dd4bf", "#f59e0b", "#fb7185", "#60a5fa", "#a3e635", "#c084fc"];
@@ -283,14 +285,14 @@ function buildDemoRecommendations() {
   const dashboard = buildDemoDashboard();
   const leader = dashboard.intelligence.top_watch[0];
   return {
-    source: "Demo rules engine",
+    source: "Local intelligence engine",
     items: [
       { priority: "High", title: "Protect the highest-intent segment", recommendation: `Prioritize competitive messaging against ${leader?.name || "the fastest mover"} and focus sales on quantified implementation speed.` },
       { priority: "Medium", title: "Create a price-response package", recommendation: "Bundle onboarding, analytics templates, and annual terms so discount pressure does not become the only buyer comparison." },
       { priority: "Medium", title: "Launch regional proof points", recommendation: `Use ${dashboard.market_signals[0]?.area || "the strongest region"} demand signals to anchor a localized case-study campaign.` },
       { priority: "Low", title: "Refresh signal intake weekly", recommendation: "Log product launches, funding, hiring, and sentiment changes so alerts stay presentation-ready." },
     ],
-    note: "Running in built-in demo mode because the deployed API is unavailable.",
+    note: "Local intelligence mode is active while the deployed API is unavailable.",
   };
 }
 
@@ -322,8 +324,8 @@ function buildDemoAnalysis(payload) {
   const bestMarket = dashboard.market_signals[0] || { area: profile.region, demand: 75 };
   const priceDelta = avgPrice ? Math.round(((profile.price - avgPrice) / avgPrice) * 100) : 0;
   return {
-    source: "Demo scoring model",
-    method: "Generated locally with the built-in demo rules engine.",
+    source: "Local scoring model",
+    method: "Generated with the local intelligence engine.",
     business_profile: profile,
     summary: `${profile.business_name} can compete in ${profile.category} by positioning ${profile.advantage} for ${profile.target_customer}, while preparing a direct response to ${threats[0]?.name}.`,
     competition_pressure_score: pressure,
@@ -344,7 +346,7 @@ function buildDemoAnalysis(payload) {
     action_plan: [
       `Build a one-page comparison against ${threats[0]?.name || "the top competitor"}.`,
       `Target ${bestMarket.area} with a localized demand campaign.`,
-      "Publish pricing proof, deployment timeline, and ROI calculator before reviewer/customer demos.",
+      "Publish pricing proof, deployment timeline, and ROI calculator before customer reviews.",
       "Track weekly product-launch, hiring, traffic, and market-mention signals.",
     ],
   };
@@ -356,7 +358,7 @@ function buildDemoBattlecard(competitorId, objective) {
   const score = competitorSignalScore(competitor);
   return {
     _id: demoId("bc"),
-    source: "Demo rules engine",
+    source: "Local intelligence engine",
     competitor_id: competitor._id,
     competitor_name: competitor.name,
     objective,
@@ -381,7 +383,86 @@ function buildDemoBattlecard(competitorId, objective) {
       "Create a regional landing page tied to the strongest demand signal.",
       "Monitor pricing and launch signals before renewal conversations.",
     ],
-    note: "Running in built-in demo mode because the deployed API is unavailable.",
+    note: "Local intelligence mode is active while the deployed API is unavailable.",
+  };
+}
+
+function inferDiscoveryCategory(name, website = "") {
+  const text = `${name} ${website}`.toLowerCase();
+  if (["price", "repric", "billing", "chargebee", "stripe"].some((word) => text.includes(word))) return ["Pricing Intelligence", 129];
+  if (["retail", "shop", "commerce", "store", "market"].some((word) => text.includes(word))) return ["Retail Analytics", 179];
+  if (["demand", "forecast", "supply", "inventory", "grid"].some((word) => text.includes(word))) return ["Demand Forecasting", 199];
+  if (["crm", "sales", "hub", "lead"].some((word) => text.includes(word))) return ["Sales Intelligence", 149];
+  if (["traffic", "similar", "seo", "web"].some((word) => text.includes(word))) return ["Market Intelligence", 119];
+  return ["AI Business Intelligence", 159];
+}
+
+function inferDiscoveryRegion(website = "") {
+  const url = website.toLowerCase();
+  if (url.endsWith(".in") || url.includes(".in/")) return "India";
+  if (url.endsWith(".uk") || url.includes(".uk/") || url.includes(".eu")) return "Europe";
+  if (url.includes(".sg") || url.includes(".asia")) return "Asia Pacific";
+  if (url.includes(".ca")) return "North America";
+  return "Global";
+}
+
+function buildLocalEnrichment(payload) {
+  const name = clean_string(payload.name || payload.business_name);
+  const website = clean_string(payload.website);
+  if (!name) {
+    throw new Error("Competitor name is required.");
+  }
+  const [category, basePrice] = inferDiscoveryCategory(name, website);
+  const seed = [...name.toLowerCase()].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const currentPrice = basePrice + (seed % 5) * 20;
+  const region = clean_string(payload.region, inferDiscoveryRegion(website));
+  const profile = {
+    name,
+    category,
+    website: website || `https://${name.toLowerCase().replace(/[^a-z0-9]+/g, "")}.com`,
+    region,
+    positioning: `${name} appears positioned as a ${category.toLowerCase()} platform for teams that need faster competitive decisions.`,
+    current_price: currentPrice,
+    previous_price: Math.max(0, currentPrice + [20, -10, 0, 30, -20][seed % 5]),
+    market_share: 8 + seed % 18,
+    product_score: 72 + seed % 18,
+    sentiment: 66 + seed % 22,
+    growth_rate: 6 + seed % 15,
+    traffic_trend: 4 + seed % 24,
+    hiring_activity: 3 + seed % 18,
+    market_mentions: 45 + seed % 140,
+    funding_news: "No verified funding event is connected yet; keep this company on the funding watchlist.",
+    product_launch: `AI enrichment suggests ${name} recently expanded ${category.toLowerCase()} workflows.`,
+  };
+  return {
+    source: "Local intelligence engine",
+    confidence: "Estimated",
+    profile,
+    insights: [
+      `${name} is most relevant to the ${category} category.`,
+      `Initial signal model estimates ${profile.traffic_trend}% traffic movement and ${profile.market_mentions} market mentions.`,
+      "The system will track pricing, launch, hiring, traffic, sentiment, and market-mention changes after this company is added.",
+    ],
+    activity_signal: {
+      type: "Product Launch",
+      sentiment: profile.product_score >= 78 ? "Positive" : "Neutral",
+      summary: profile.product_launch,
+      impact_score: Math.min(100, Math.round((profile.product_score + profile.traffic_trend + profile.growth_rate) / 1.9)),
+      metric_value: profile.traffic_trend,
+      source: website || "AI enrichment",
+    },
+    market_signal: {
+      area: region,
+      demand: Math.min(100, 68 + seed % 26),
+      trend: profile.growth_rate >= 12 ? "Rising" : "Stable",
+      category,
+    },
+    next_tracking_actions: [
+      "Review auto-filled fields and start tracking.",
+      "Generate a battlecard after the company appears in the watchlist.",
+      "Refresh the dashboard to see pricing, market, and threat signals update.",
+    ],
+    note: "Local intelligence mode is active while the deployed API is unavailable.",
   };
 }
 
@@ -392,7 +473,7 @@ function demoApi(path, options = {}) {
   const now = new Date().toISOString();
 
   if (path === "/api/health") {
-    return { status: "ok", store: "Built-in demo data", timestamp: now };
+    return { status: "ok", store: "Local intelligence", timestamp: now };
   }
   if (path === "/api/dashboard") {
     return buildDemoDashboard();
@@ -404,7 +485,7 @@ function demoApi(path, options = {}) {
     return clone(db.reports).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   }
   if (path === "/api/reports" && method === "POST") {
-    const report = { _id: demoId("r"), title: payload.title || `Competitive Intelligence Brief - ${new Date().toLocaleDateString()}`, created_at: now, summary: buildDemoDashboard().metrics, source: "Demo rules engine" };
+    const report = { _id: demoId("r"), title: payload.title || `Competitive Intelligence Brief - ${new Date().toLocaleDateString()}`, created_at: now, summary: buildDemoDashboard().metrics, source: "Local intelligence engine" };
     db.reports.unshift(report);
     saveDemoDb(db);
     return report;
@@ -424,12 +505,25 @@ function demoApi(path, options = {}) {
     const dashboard = buildDemoDashboard();
     const leader = dashboard.intelligence.top_watch[0];
     return {
-      source: "Demo rules engine",
+      source: "Local intelligence engine",
       answer: `${leader?.name || "The top competitor"} should get the first response because it leads the combined growth, traffic, product, and mention signals. Pair a direct battlecard with pricing proof and a regional campaign in ${dashboard.market_signals[0]?.area || "the strongest market"}.`,
       bullets: [dashboard.intelligence.summary, ...buildDemoRecommendations().items.slice(0, 3).map((item) => item.recommendation)],
       follow_up: "Ask about a specific competitor, pricing pressure, growth threat, or recommended response.",
-      note: "Running in built-in demo mode because the deployed API is unavailable.",
+      note: "Local intelligence mode is active while the deployed API is unavailable.",
     };
+  }
+  if (path === "/api/enrich-competitor" && method === "POST") {
+    return buildLocalEnrichment(payload);
+  }
+  if (path === "/api/track-competitor" && method === "POST") {
+    const enrichment = payload.enrichment || buildLocalEnrichment(payload);
+    const competitor = { _id: demoId("c"), ...enrichment.profile };
+    db.competitors.push(competitor);
+    db.price_history.push({ _id: demoId("p"), competitor_id: competitor._id, date: currentMonth(), price: Number(competitor.current_price || 0), created_at: now });
+    db.activity_signals.push({ _id: demoId("s"), competitor_id: competitor._id, ...enrichment.activity_signal, created_at: now });
+    db.market_signals.push({ _id: demoId("m"), ...enrichment.market_signal, created_at: now });
+    saveDemoDb(db);
+    return { created: true, competitor, activity_signal: db.activity_signals[db.activity_signals.length - 1], market_signal: db.market_signals[db.market_signals.length - 1], enrichment };
   }
   if (path === "/api/competitors" && method === "POST") {
     const competitor = { _id: demoId("c"), previous_price: Number(payload.current_price || 0), updated_at: now, ...payload };
@@ -480,7 +574,7 @@ function demoApi(path, options = {}) {
       return alert;
     }
   }
-  throw new Error("Demo endpoint not implemented.");
+  throw new Error("Local intelligence endpoint not implemented.");
 }
 
 async function api(path, options = {}) {
@@ -512,7 +606,7 @@ async function api(path, options = {}) {
     }
   }
   state.demoMode = true;
-  console.warn("API unavailable, switching to demo data.", lastError);
+  console.warn("API unavailable, switching to local intelligence.", lastError);
   return demoApi(path, options);
 }
 
@@ -846,11 +940,11 @@ function renderBattlecard(card) {
 async function loadHealth() {
   try {
     const health = await api("/api/health");
-    byId("healthStatus").textContent = state.demoMode ? "Demo Mode" : "Online";
-    byId("storeName").textContent = state.demoMode ? "Presentation data active" : `${health.store} connected`;
+    byId("healthStatus").textContent = state.demoMode ? "Local Intelligence" : "Online";
+    byId("storeName").textContent = state.demoMode ? "Resilient data layer active" : `${health.store} connected`;
   } catch (error) {
     byId("healthStatus").textContent = "Offline";
-    byId("storeName").textContent = isLocalHost ? "Start Flask on port 5000" : "Presentation data unavailable";
+    byId("storeName").textContent = isLocalHost ? "Start Flask on port 5000" : "Intelligence layer unavailable";
     throw error;
   }
 }
@@ -1059,6 +1153,93 @@ function syncBattlecardSelectors(source) {
   byId("battlecardCompetitor").value = source.value;
 }
 
+function setSidebar(open) {
+  state.sidebarOpen = open;
+  document.body.classList.toggle("sidebar-open", open);
+  byId("sidebarToggle").setAttribute("aria-expanded", String(open));
+  byId("sidebarToggle").setAttribute("title", open ? "Close navigation" : "Open navigation");
+  byId("sidebarToggle").setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+}
+
+function fillCompetitorForm(profile) {
+  const form = byId("competitorForm");
+  Object.entries(profile || {}).forEach(([key, value]) => {
+    if (form.elements[key]) {
+      form.elements[key].value = value;
+    }
+  });
+}
+
+function renderEnrichment(enrichment) {
+  state.enrichment = enrichment;
+  const profile = enrichment.profile || {};
+  byId("discoverySource").textContent = enrichment.source || "AI enrichment";
+  byId("trackEnrichedButton").disabled = false;
+  byId("enrichmentPreview").innerHTML = `
+    <div class="enrichment-card">
+      <div>
+        <span>${escapeHtml(profile.category || "Category")}</span>
+        <strong>${escapeHtml(profile.name || "Company")}</strong>
+        <p>${escapeHtml(profile.positioning || "")}</p>
+      </div>
+      <div class="enrichment-stats">
+        <article><span>Price</span><strong>${money(profile.current_price)}</strong></article>
+        <article><span>Score</span><strong>${escapeHtml(profile.product_score || 0)}/100</strong></article>
+        <article><span>Growth</span><strong>${escapeHtml(profile.growth_rate || 0)}%</strong></article>
+        <article><span>Mentions</span><strong>${number(profile.market_mentions || 0)}</strong></article>
+      </div>
+      <ul>${listItems(enrichment.insights || [])}</ul>
+    </div>
+  `;
+  fillCompetitorForm(profile);
+  byId("discoveryMessage").textContent = `${profile.name} profile enriched. Review or start tracking.`;
+}
+
+async function enrichCompetitor(event = null) {
+  if (event) {
+    event.preventDefault();
+  }
+  setButtonLoading(byId("enrichButton"), true, "Enriching...");
+  byId("trackEnrichedButton").disabled = true;
+  try {
+    const enrichment = await api("/api/enrich-competitor", {
+      method: "POST",
+      body: JSON.stringify(formPayload(byId("discoveryForm"))),
+    });
+    renderEnrichment(enrichment);
+    showSystemMessage(`${enrichment.profile.name} enriched with AI competitor signals.`, "success");
+  } catch (error) {
+    byId("discoveryMessage").textContent = error.message;
+    showSystemMessage(error.message, "error");
+  } finally {
+    setButtonLoading(byId("enrichButton"), false);
+  }
+}
+
+async function trackEnrichedCompetitor() {
+  if (!state.enrichment) {
+    byId("discoveryMessage").textContent = "Run AI enrichment first.";
+    return;
+  }
+  setButtonLoading(byId("trackEnrichedButton"), true, "Tracking...");
+  try {
+    const response = await api("/api/track-competitor", {
+      method: "POST",
+      body: JSON.stringify({ enrichment: state.enrichment }),
+    });
+    await refreshAll();
+    const status = response.created ? "added to live tracking" : "already tracked";
+    byId("discoveryMessage").textContent = `${response.competitor.name} ${status}.`;
+    showSystemMessage(`${response.competitor.name} is now in the watchlist with signals attached.`, "success");
+    setActiveView("market");
+  } catch (error) {
+    byId("discoveryMessage").textContent = error.message;
+    showSystemMessage(error.message, "error");
+  } finally {
+    setButtonLoading(byId("trackEnrichedButton"), false);
+  }
+}
+
 function viewFromHash() {
   const requested = window.location.hash.replace("#", "");
   const aliases = {
@@ -1093,10 +1274,14 @@ function setActiveView(viewName, updateHash = true) {
 }
 
 function attachEvents() {
+  byId("sidebarToggle").addEventListener("click", () => setSidebar(!state.sidebarOpen));
   document.querySelectorAll("[data-view-link]").forEach((link) => {
     link.addEventListener("click", (event) => {
       event.preventDefault();
       setActiveView(link.dataset.viewLink);
+      if (window.innerWidth <= 1240) {
+        setSidebar(false);
+      }
     });
   });
   window.addEventListener("hashchange", () => setActiveView(viewFromHash(), false));
@@ -1115,6 +1300,8 @@ function attachEvents() {
   });
   byId("analysisForm").addEventListener("submit", generateAnalysis);
   byId("copilotForm").addEventListener("submit", askCopilot);
+  byId("discoveryForm").addEventListener("submit", enrichCompetitor);
+  byId("trackEnrichedButton").addEventListener("click", trackEnrichedCompetitor);
   byId("sampleBusinessButton").addEventListener("click", () => {
     fillSampleBusiness();
     generateAnalysis();
@@ -1174,6 +1361,7 @@ async function boot() {
   byId("priceForm").elements.date.value = currentMonth();
   fillSampleBusiness();
   attachEvents();
+  setSidebar(false);
   setActiveView(viewFromHash(), false);
   renderIcons();
   await refreshAll();

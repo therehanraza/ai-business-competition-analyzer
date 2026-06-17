@@ -138,6 +138,29 @@ class BackendApiTest(unittest.TestCase):
         self.assertIn("answer", response.json)
         self.assertTrue(response.json["bullets"])
 
+    def test_ai_enrichment_and_tracking_flow(self):
+        enriched = self.post_json(
+            "/api/enrich-competitor",
+            {"name": "ShopSignal AI", "website": "https://shopsignal.ai"},
+        )
+        self.assertEqual(enriched.status_code, 200)
+        self.assertEqual(enriched.json["profile"]["name"], "ShopSignal AI")
+        self.assertTrue(enriched.json["insights"])
+        self.assertIn("activity_signal", enriched.json)
+
+        tracked = self.post_json("/api/track-competitor", {"enrichment": enriched.json})
+        self.assertEqual(tracked.status_code, 201)
+        competitor_id = tracked.json["competitor"]["_id"]
+        self.assertEqual(tracked.json["competitor"]["name"], "ShopSignal AI")
+
+        detail = self.client.get(f"/api/competitors/{competitor_id}")
+        self.assertEqual(detail.status_code, 200)
+        self.assertTrue(detail.json["price_history"])
+
+        activity = self.client.get(f"/api/activity-signals?competitor_id={competitor_id}")
+        self.assertEqual(activity.status_code, 200)
+        self.assertTrue(activity.json)
+
     def test_alert_status_flow(self):
         created = self.post_json(
             "/api/alerts",

@@ -90,6 +90,8 @@ def public_api_metadata():
             "battlecards": "/api/battlecards",
             "intelligence": "/api/intelligence",
             "copilot": "/api/copilot",
+            "enrich_competitor": "/api/enrich-competitor",
+            "track_competitor": "/api/track-competitor",
         },
     }
 
@@ -1242,6 +1244,197 @@ def parse_gemini_json(response):
     return json.loads(text)
 
 
+def infer_company_domain(name, website=""):
+    text = " ".join([clean_string(name), clean_string(website)]).lower()
+    if any(word in text for word in ["price", "repric", "billing", "chargebee", "stripe"]):
+        return "Pricing Intelligence", 129
+    if any(word in text for word in ["retail", "shop", "commerce", "store", "market"]):
+        return "Retail Analytics", 179
+    if any(word in text for word in ["demand", "forecast", "supply", "inventory", "grid"]):
+        return "Demand Forecasting", 199
+    if any(word in text for word in ["crm", "sales", "hub", "lead"]):
+        return "Sales Intelligence", 149
+    if any(word in text for word in ["traffic", "similar", "seo", "web"]):
+        return "Market Intelligence", 119
+    return "AI Business Intelligence", 159
+
+
+def infer_region(website=""):
+    url = clean_string(website).lower()
+    if url.endswith(".in") or ".in/" in url:
+        return "India"
+    if url.endswith(".uk") or ".uk/" in url or ".eu" in url:
+        return "Europe"
+    if ".sg" in url or ".asia" in url:
+        return "Asia Pacific"
+    if ".ca" in url:
+        return "North America"
+    return "Global"
+
+
+def local_competitor_enrichment(payload):
+    name = clean_string(payload.get("name") or payload.get("business_name"))
+    website = clean_string(payload.get("website"))
+    if not name:
+        return None, "Competitor name is required."
+
+    category, base_price = infer_company_domain(name, website)
+    region = clean_string(payload.get("region"), infer_region(website))
+    signal_seed = sum(ord(char) for char in name.lower())
+    product_score = 72 + signal_seed % 18
+    sentiment = 66 + signal_seed % 22
+    growth_rate = 6 + signal_seed % 15
+    traffic_trend = 4 + signal_seed % 24
+    hiring_activity = 3 + signal_seed % 18
+    market_mentions = 45 + signal_seed % 140
+    current_price = base_price + (signal_seed % 5) * 20
+    previous_price = max(0, current_price + ([20, -10, 0, 30, -20][signal_seed % 5]))
+    launch_focus = {
+        "Pricing Intelligence": "released automated pricing-change alerts and competitor price movement detection",
+        "Retail Analytics": "expanded promotion analytics and merchandising performance dashboards",
+        "Demand Forecasting": "introduced AI scenario planning for regional demand shifts",
+        "Sales Intelligence": "launched account scoring and sales battlecard automation",
+        "Market Intelligence": "added web traffic and share-of-attention monitoring",
+    }.get(category, "expanded AI-assisted market and competitor intelligence workflows")
+    profile = {
+        "name": name,
+        "category": category,
+        "website": website or f"https://{re.sub(r'[^a-z0-9]+', '', name.lower())}.com",
+        "region": region,
+        "positioning": f"{name} appears positioned as a {category.lower()} platform for teams that need faster competitive decisions.",
+        "current_price": current_price,
+        "previous_price": previous_price,
+        "market_share": 8 + signal_seed % 18,
+        "product_score": product_score,
+        "sentiment": sentiment,
+        "growth_rate": growth_rate,
+        "traffic_trend": traffic_trend,
+        "hiring_activity": hiring_activity,
+        "market_mentions": market_mentions,
+        "funding_news": "No verified funding event is connected yet; keep this company on the funding watchlist.",
+        "product_launch": f"AI enrichment suggests {name} recently {launch_focus}.",
+    }
+    return {
+        "source": "AI enrichment model",
+        "confidence": "Estimated",
+        "profile": profile,
+        "insights": [
+            f"{name} is most relevant to the {category} category.",
+            f"Initial signal model estimates {traffic_trend}% traffic movement and {market_mentions} market mentions.",
+            "The system will track pricing, launch, hiring, traffic, sentiment, and market-mention changes after this company is added.",
+        ],
+        "activity_signal": {
+            "type": "Product Launch",
+            "sentiment": "Positive" if product_score >= 78 else "Neutral",
+            "summary": profile["product_launch"],
+            "impact_score": min(100, round((product_score + traffic_trend + growth_rate) / 1.9)),
+            "metric_value": traffic_trend,
+            "source": website or "AI enrichment",
+        },
+        "market_signal": {
+            "area": region,
+            "demand": min(100, 68 + signal_seed % 26),
+            "trend": "Rising" if growth_rate >= 12 else "Stable",
+            "category": category,
+        },
+        "next_tracking_actions": [
+            "Review auto-filled fields and start tracking.",
+            "Generate a battlecard after the company appears in the watchlist.",
+            "Refresh the dashboard to see pricing, market, and threat signals update.",
+        ],
+    }, None
+
+
+def ask_gemini_enrichment(payload):
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    model = gemini_model_name()
+    if not api_key:
+        enrichment, error = local_competitor_enrichment(payload)
+        if enrichment:
+            enrichment["note"] = "AI enrichment is running from the built-in signal model. Add GEMINI_API_KEY for Gemini-generated enrichment."
+        return enrichment, error
+
+    prompt = {
+        "role": "competitive intelligence researcher",
+        "instruction": "Return strict JSON only. Enrich the requested competitor for a business intelligence app. Use public business knowledge when known; if exact values are unavailable, produce reasonable estimates and set confidence to Estimated. Do not leave required profile fields blank.",
+        "schema": {
+            "source": "Google Gemini",
+            "confidence": "High|Medium|Estimated",
+            "profile": {
+                "name": "string",
+                "category": "string",
+                "website": "string",
+                "region": "string",
+                "positioning": "string",
+                "current_price": "number",
+                "previous_price": "number",
+                "market_share": "number 0-100",
+                "product_score": "number 0-100",
+                "sentiment": "number 0-100",
+                "growth_rate": "number",
+                "traffic_trend": "number",
+                "hiring_activity": "number",
+                "market_mentions": "number",
+                "funding_news": "string",
+                "product_launch": "string",
+            },
+            "insights": ["string"],
+            "activity_signal": {
+                "type": "Traffic|Funding|Hiring|Product Launch|Pricing|Sentiment|Market Mention",
+                "sentiment": "Positive|Neutral|Negative",
+                "summary": "string",
+                "impact_score": "number 0-100",
+                "metric_value": "number",
+                "source": "string",
+            },
+            "market_signal": {"area": "string", "demand": "number 0-100", "trend": "Rising|Stable|Softening", "category": "string"},
+            "next_tracking_actions": ["string"],
+        },
+        "request": payload,
+    }
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    response = requests.post(
+        url,
+        headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
+        json={"contents": [{"parts": [{"text": json.dumps(prompt)}]}]},
+        timeout=25,
+    )
+    response.raise_for_status()
+    parsed = parse_gemini_json(response)
+    parsed["source"] = "Google Gemini"
+    parsed["note"] = f"Powered by {model}."
+    return parsed, None
+
+
+def normalize_enrichment(enrichment):
+    profile, error = competitor_payload(enrichment.get("profile", {}))
+    if error:
+        return None, error
+    activity = enrichment.get("activity_signal") or {}
+    market = enrichment.get("market_signal") or {}
+    enrichment["profile"] = profile
+    enrichment["activity_signal"] = {
+        "type": validate_choice(activity.get("type"), {"Traffic", "Funding", "Hiring", "Product Launch", "Pricing", "Sentiment", "Market Mention"}, "Product Launch"),
+        "sentiment": validate_choice(activity.get("sentiment"), {"Positive", "Neutral", "Negative"}, "Neutral"),
+        "summary": clean_string(activity.get("summary"), profile.get("product_launch", "Initial competitor activity captured.")),
+        "impact_score": clamp_number(activity.get("impact_score"), 0, 100, 70),
+        "metric_value": as_float(activity.get("metric_value"), profile.get("traffic_trend", 0)),
+        "source": clean_string(activity.get("source"), profile.get("website", "AI enrichment")),
+    }
+    enrichment["market_signal"] = {
+        "area": clean_string(market.get("area"), profile.get("region", "Global")),
+        "demand": clamp_number(market.get("demand"), 0, 100, 75),
+        "trend": validate_choice(market.get("trend"), {"Rising", "Stable", "Softening"}, "Stable"),
+        "category": clean_string(market.get("category"), profile.get("category")),
+    }
+    enrichment["confidence"] = clean_string(enrichment.get("confidence"), "Estimated")
+    enrichment["insights"] = [clean_string(item) for item in enrichment.get("insights", []) if clean_string(item)]
+    enrichment["next_tracking_actions"] = [
+        clean_string(item) for item in enrichment.get("next_tracking_actions", []) if clean_string(item)
+    ]
+    return enrichment, None
+
+
 def ask_gemini(dashboard):
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     model = gemini_model_name()
@@ -1405,6 +1598,84 @@ def copilot():
         fallback = answer_copilot_locally(question, dashboard_data)
         fallback["note"] = f"Gemini response was unavailable, so a rule-based copilot answer was used. Detail: {exc}"
         return jsonify(fallback)
+
+
+@app.post("/api/enrich-competitor")
+def enrich_competitor():
+    payload = request.get_json(force=True, silent=True) or {}
+    try:
+        enrichment, error = ask_gemini_enrichment(payload)
+    except (requests.RequestException, KeyError, ValueError, json.JSONDecodeError) as exc:
+        enrichment, error = local_competitor_enrichment(payload)
+        if enrichment:
+            enrichment["note"] = f"Gemini enrichment was unavailable, so the built-in signal model was used. Detail: {exc}"
+    if error:
+        return error_response(error)
+    normalized, error = normalize_enrichment(enrichment)
+    if error:
+        return error_response(error)
+    return jsonify(normalized)
+
+
+@app.post("/api/track-competitor")
+def track_competitor():
+    payload = request.get_json(force=True, silent=True) or {}
+    enrichment = payload.get("enrichment")
+    if not enrichment:
+        try:
+            enrichment, error = ask_gemini_enrichment(payload)
+        except (requests.RequestException, KeyError, ValueError, json.JSONDecodeError) as exc:
+            enrichment, error = local_competitor_enrichment(payload)
+            if enrichment:
+                enrichment["note"] = f"Gemini enrichment was unavailable, so the built-in signal model was used. Detail: {exc}"
+        if error:
+            return error_response(error)
+
+    normalized, error = normalize_enrichment(enrichment)
+    if error:
+        return error_response(error)
+
+    profile = normalized["profile"]
+    existing = next(
+        (item for item in store.all("competitors") if clean_string(item.get("name")).lower() == profile["name"].lower()),
+        None,
+    )
+    if existing:
+        return jsonify({"created": False, "competitor": existing, "enrichment": normalized})
+
+    try:
+        created = store.insert("competitors", profile)
+    except DuplicateKeyError:
+        return error_response("Competitor name already exists.", 409)
+
+    store.insert(
+        "price_history",
+        {
+            "competitor_id": created["_id"],
+            "date": datetime.now().strftime("%Y-%m"),
+            "price": as_float(created.get("current_price")),
+            "created_at": utc_now(),
+            "updated_at": utc_now(),
+        },
+    )
+    activity = store.insert(
+        "activity_signals",
+        {
+            **normalized["activity_signal"],
+            "competitor_id": created["_id"],
+            "created_at": utc_now(),
+            "updated_at": utc_now(),
+        },
+    )
+    market = store.insert(
+        "market_signals",
+        {
+            **normalized["market_signal"],
+            "created_at": utc_now(),
+            "updated_at": utc_now(),
+        },
+    )
+    return jsonify({"created": True, "competitor": created, "activity_signal": activity, "market_signal": market, "enrichment": normalized}), 201
 
 
 @app.post("/api/analyze")

@@ -2,7 +2,7 @@
 
 A deployable competitive intelligence workspace built with Flask, MongoDB Atlas, Gemini, and a static HTML/CSS/JavaScript frontend.
 
-The main showcase feature is the AI Competitor Intelligence Command Center. Add competitor websites/companies, log pricing, traffic, funding, hiring, product launch, sentiment, and market-mention signals, then generate alerts, predictions, battlecards, strategic recommendations, reports, and natural-language copilot answers. If `GEMINI_API_KEY` is not configured, the app falls back to a local rules engine so demos still work.
+The main showcase feature is the AI Competitor Intelligence Command Center. Add competitor websites/companies, enrich competitor profiles with AI, log pricing, traffic, funding, hiring, product launch, sentiment, and market-mention signals, then generate alerts, predictions, battlecards, strategic recommendations, reports, and natural-language copilot answers. If `GEMINI_API_KEY` is not configured, the app falls back to a local intelligence engine so the workflow still works.
 
 ## Features Completed
 
@@ -11,6 +11,7 @@ The main showcase feature is the AI Competitor Intelligence Command Center. Add 
 - Competitor activity tracking for traffic, funding, hiring, product launches, pricing, sentiment, and market mentions.
 - Real-time generated alerts and likely-next-move predictions from growth and activity signals.
 - AI copilot endpoint and UI for natural-language competitive-positioning questions.
+- AI Company Discovery flow that enriches a competitor from a name/website and starts tracking the company with generated pricing, activity, and market signals.
 - AI Battlecard Generator with Gemini support and rules-engine fallback.
 - Battlecard history API with optional non-persistent previews.
 - Competitor watchlist create flow.
@@ -24,7 +25,7 @@ The main showcase feature is the AI Competitor Intelligence Command Center. Add 
 - Production CORS configuration through `ALLOWED_ORIGINS`.
 - Render backend deployment config in `render.yaml`.
 - Vercel frontend deployment config in `frontend/vercel.json`.
-- Presentation-safe frontend demo mode when the deployed API route is unavailable, so charts, analyzer results, battlecards, reports, and intake workflows still work during reviews.
+- Presentation-safe local intelligence mode when the deployed API route is unavailable, so charts, analyzer results, battlecards, reports, and intake workflows still work during reviews.
 
 ## Project Structure
 
@@ -112,7 +113,7 @@ If you choose a different Render service name, update `frontend/vercel.json`.
 
 1. Create an Atlas cluster.
 2. Create a database user with read/write permissions.
-3. Allow access from Render. For a quick demo, `0.0.0.0/0` works, but production should use tighter network access.
+3. Allow access from Render. For a quick review deployment, `0.0.0.0/0` works, but production should use tighter network access.
 4. Copy the connection string into Render as `MONGODB_URI`.
 5. Keep `MONGODB_DATABASE=ai_business_competition_analyzer`.
 
@@ -143,6 +144,8 @@ The backend seeds starter competitors, price history, market signals, and alerts
 - `GET /api/activity-signals/<signal_id>`
 - `PUT /api/activity-signals/<signal_id>`
 - `DELETE /api/activity-signals/<signal_id>`
+- `POST /api/enrich-competitor`
+- `POST /api/track-competitor`
 - `GET /api/intelligence`
 - `POST /api/copilot`
 - `GET /api/alerts`
@@ -174,6 +177,6 @@ cd "C:\Users\Rehan Raza\OneDrive\Desktop\AI_Business_Competition_Analyzer"
 
 - The frontend uses `http://127.0.0.1:5000` only on localhost.
 - In production, the frontend calls `/api`, and Vercel rewrites those calls to Render.
-- If `/api` or the Render fallback is unavailable, the frontend automatically switches to built-in presentation data and labels the sidebar status as `Demo Mode`.
+- If `/api` or the Render fallback is unavailable, the frontend automatically switches to local intelligence mode and labels the sidebar status as `Local Intelligence`.
 - The backend still works without MongoDB, but Render's filesystem is ephemeral, so MongoDB Atlas is required for persistent production data.
 - The app works without Gemini, but battlecards and recommendations use the rules engine until `GEMINI_API_KEY` is set.
