@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: ai-business-competition-analyzer-api
+    env: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: MONGODB_DATABASE
+        value: ai_business_competition_analyzer
+      - key: GEMINI_MODEL
+        value: gemini-flash-latest
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

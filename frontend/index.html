@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Business Competition Analyzer</title>
+  <title>CompetitorIQ | AI Business Competition Analyzer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,56 +13,237 @@
   <div class="app-shell">
     <aside class="sidebar" aria-label="Primary navigation">
       <div class="brand">
-        <div class="brand-mark">AI</div>
+        <div class="brand-mark">CI</div>
         <div>
           <strong>CompetitorIQ</strong>
-          <span>Market Monitoring</span>
+          <span>AI strategy workspace</span>
         </div>
       </div>
 
       <nav class="nav-list">
-        <a class="active" href="#overview">Overview</a>
-        <a href="#competitors">Competitors</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#markets">Markets</a>
-        <a href="#alerts">Alerts</a>
-        <a href="#recommendations">AI Strategy</a>
+        <a class="active" href="#intelligence"><i data-lucide="radar"></i><span>Intelligence</span></a>
+        <a href="#command"><i data-lucide="brain-circuit"></i><span>Analyzer</span></a>
+        <a href="#battlecard"><i data-lucide="shield-check"></i><span>Battlecards</span></a>
+        <a href="#portfolio"><i data-lucide="line-chart"></i><span>Trends</span></a>
+        <a href="#intake"><i data-lucide="database-zap"></i><span>Signal Intake</span></a>
+        <a href="#reports"><i data-lucide="file-text"></i><span>Reports</span></a>
       </nav>
 
       <div class="sidebar-panel">
-        <span>Backend status</span>
-        <strong id="healthStatus">Checking...</strong>
-        <small id="storeName">Connecting to API</small>
+        <span>API status</span>
+        <strong id="healthStatus">Checking</strong>
+        <small id="storeName">Connecting</small>
       </div>
     </aside>
 
     <main class="main">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Competitive Intelligence & Market Monitoring</p>
+          <p class="eyebrow">Competitive intelligence SaaS</p>
           <h1>AI Business Competition Analyzer</h1>
+          <p class="page-subtitle">A reviewer-ready workspace for AI-powered competitor tracking, growth signals, alerts, future-move predictions, strategic recommendations, and natural-language copilot answers.</p>
         </div>
         <div class="topbar-actions">
-          <button class="ghost-button" id="refreshButton" type="button">Refresh</button>
-          <button class="primary-button" id="aiButton" type="button">Generate AI Strategy</button>
+          <button class="ghost-button" id="refreshButton" type="button" title="Refresh dashboard">
+            <i data-lucide="refresh-cw"></i><span>Refresh</span>
+          </button>
+          <button class="primary-button" id="reportButton" type="button" title="Create executive brief">
+            <i data-lucide="file-plus-2"></i><span>Create Brief</span>
+          </button>
         </div>
       </header>
 
-      <section id="overview" class="metric-grid" aria-label="Key metrics">
+      <p class="system-message" id="systemMessage" role="status"></p>
+
+      <section class="intelligence-board" id="intelligence" aria-label="AI competitor intelligence overview">
+        <div class="panel intelligence-summary">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">AI competitor intelligence</p>
+              <h2>Live Signal Command Center</h2>
+            </div>
+            <span class="source-pill">Gemini-ready</span>
+          </div>
+          <p class="headline" id="intelligenceSummary">Loading competitor activity summary.</p>
+          <div class="signal-metric-grid">
+            <article>
+              <span>Positive Developments</span>
+              <strong id="positiveDevelopments">0</strong>
+            </article>
+            <article>
+              <span>Negative Developments</span>
+              <strong id="negativeDevelopments">0</strong>
+            </article>
+            <article>
+              <span>Traffic Trend</span>
+              <strong id="avgTrafficTrend">0%</strong>
+            </article>
+            <article>
+              <span>Market Mentions</span>
+              <strong id="marketMentions">0</strong>
+            </article>
+          </div>
+          <div class="watch-grid" id="topWatchList"></div>
+        </div>
+
+        <div class="panel copilot-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">AI copilot</p>
+              <h2>Ask About Positioning</h2>
+            </div>
+            <span class="source-pill" id="copilotSource">Rules engine</span>
+          </div>
+          <form class="copilot-form" id="copilotForm">
+            <label>Question
+              <textarea id="copilotQuestion" name="question" rows="3">Which competitor should we respond to first and why?</textarea>
+            </label>
+            <button class="primary-button full-width" id="copilotButton" type="submit">
+              <i data-lucide="message-circle-question"></i><span>Ask Copilot</span>
+            </button>
+          </form>
+          <p class="headline compact" id="copilotAnswer">Copilot answer will appear here.</p>
+          <ul id="copilotBullets"></ul>
+          <p class="ai-note" id="copilotNote"></p>
+        </div>
+
+        <div class="panel chart-panel intelligence-chart">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Prediction trend</p>
+              <h2>Performance Signal Forecast</h2>
+            </div>
+          </div>
+          <canvas id="performanceChart" height="155"></canvas>
+        </div>
+
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Strategic view</p>
+              <h2>Opportunities & Threats</h2>
+            </div>
+          </div>
+          <div class="strategy-columns">
+            <section>
+              <h3>Opportunities</h3>
+              <ul id="opportunityList"></ul>
+            </section>
+            <section>
+              <h3>Threats</h3>
+              <ul id="threatList"></ul>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="command-panel analyzer-panel" id="command" aria-label="Business competition analyzer">
+        <form class="analysis-form" id="analysisForm">
+          <div class="command-copy">
+            <p class="eyebrow">Main analyzer</p>
+            <h2>Analyze a business against competitors</h2>
+            <p>Enter one business profile and generate competition pressure, market opportunity, SWOT, ranked threats, and an action plan.</p>
+          </div>
+
+          <div class="form-grid">
+            <label>Business Name<input name="business_name" required value="Nova Retail AI"></label>
+            <label>Category<input name="category" required value="Retail Analytics"></label>
+            <label>Region<input name="region" required value="North America"></label>
+            <label>Monthly Price<input name="price" type="number" min="0" step="1" required value="179"></label>
+            <label>Product Score<input name="product_score" type="number" min="0" max="100" step="1" value="82"></label>
+            <label>Target Customer<input name="target_customer" value="mid-market retailers"></label>
+          </div>
+          <label>Competitive Advantage<textarea name="advantage" rows="3">faster deployment and simple dashboards</textarea></label>
+          <label>Business Goal
+            <select name="objective">
+              <option>Find the best competitive position for market entry</option>
+              <option>Prepare investor-ready market analysis</option>
+              <option>Improve pricing and positioning</option>
+              <option>Build a sales strategy against competitors</option>
+            </select>
+          </label>
+          <div class="button-row">
+            <button class="primary-button" id="analysisButton" type="submit">
+              <i data-lucide="brain-circuit"></i><span>Analyze Competition</span>
+            </button>
+            <button class="ghost-button" id="sampleBusinessButton" type="button">
+              <i data-lucide="wand-sparkles"></i><span>Use Sample</span>
+            </button>
+            <button class="ghost-button" id="scrollIntakeButton" type="button">
+              <i data-lucide="circle-plus"></i><span>Add Data</span>
+            </button>
+          </div>
+          <p class="form-message" id="analysisMessage" role="status"></p>
+        </form>
+
+        <div class="analysis-result">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Generated analysis</p>
+              <h2 id="analysisTitle">Competition analysis</h2>
+            </div>
+            <span class="source-pill" id="analysisSource">Scoring model</span>
+          </div>
+          <p class="headline" id="analysisSummary">Your competition analysis will appear here.</p>
+          <div class="analysis-score-grid">
+            <article>
+              <span>Competition Pressure</span>
+              <strong id="competitionPressure">0</strong>
+              <small id="competitionLevel">Waiting</small>
+            </article>
+            <article>
+              <span>Opportunity Score</span>
+              <strong id="opportunityScore">0</strong>
+              <small id="opportunityMarket">Waiting</small>
+            </article>
+            <article>
+              <span>Price Position</span>
+              <strong id="pricePosition">Waiting</strong>
+              <small id="pricePositionDetail">Waiting</small>
+            </article>
+          </div>
+
+          <div class="analysis-columns">
+            <section>
+              <h3>Top Threats</h3>
+              <div class="threat-list" id="topThreatList"></div>
+            </section>
+            <section>
+              <h3>Action Plan</h3>
+              <ol id="actionPlanList"></ol>
+            </section>
+          </div>
+
+          <div class="swot-grid" id="swotGrid">
+            <section><h3>Strengths</h3><ul id="swotStrengths"></ul></section>
+            <section><h3>Weaknesses</h3><ul id="swotWeaknesses"></ul></section>
+            <section><h3>Opportunities</h3><ul id="swotOpportunities"></ul></section>
+            <section><h3>Threats</h3><ul id="swotThreats"></ul></section>
+          </div>
+          <div class="button-row">
+            <button class="ghost-button" id="exportAnalysisButton" type="button">
+              <i data-lucide="download"></i><span>Export Analysis</span>
+            </button>
+          </div>
+          <p class="ai-note" id="analysisNote"></p>
+        </div>
+      </section>
+
+      <section class="metric-grid" aria-label="Key metrics">
         <article class="metric-card">
           <span>Tracked Competitors</span>
           <strong id="trackedCompetitors">0</strong>
-          <small>Active market watchlist</small>
+          <small>Active watchlist</small>
         </article>
         <article class="metric-card">
           <span>Average Price</span>
           <strong id="averagePrice">$0</strong>
-          <small>Across tracked products</small>
+          <small>Across tracked offers</small>
         </article>
         <article class="metric-card">
           <span>Demand Index</span>
           <strong id="demandIndex">0</strong>
-          <small>Area-weighted market signal</small>
+          <small>Regional signal average</small>
         </article>
         <article class="metric-card alert-metric">
           <span>Open Alerts</span>
@@ -71,15 +252,98 @@
         </article>
       </section>
 
-      <section class="workspace-grid">
-        <div class="panel chart-panel" id="pricing">
+      <section class="insight-strip" aria-label="Executive summary">
+        <article>
+          <span>Top growth threat</span>
+          <strong id="topGrowth">Loading</strong>
+          <small id="topGrowthDetail">Calculating</small>
+        </article>
+        <article>
+          <span>Pricing pressure</span>
+          <strong id="pricePressure">Loading</strong>
+          <small id="pricePressureDetail">Calculating</small>
+        </article>
+        <article>
+          <span>Strongest market</span>
+          <strong id="strongestMarket">Loading</strong>
+          <small id="strongestMarketDetail">Calculating</small>
+        </article>
+      </section>
+
+      <section class="feature-grid" id="battlecard">
+        <form class="panel battlecard-control" id="battlecardForm">
           <div class="panel-heading">
             <div>
-              <p class="eyebrow">Pricing movements</p>
+              <p class="eyebrow">AI battlecard</p>
+              <h2>Competitive Sales Brief</h2>
+            </div>
+            <span class="source-pill" id="battlecardSource">Rules engine</span>
+          </div>
+          <div class="form-grid single">
+            <label>Competitor
+              <select id="battlecardCompetitor" name="competitor_id" required></select>
+            </label>
+            <label>Objective
+              <select id="battlecardObjective" name="objective">
+                <option>Win new business against this competitor</option>
+                <option>Defend an active renewal</option>
+                <option>Prepare product positioning</option>
+                <option>Plan a regional campaign</option>
+              </select>
+            </label>
+          </div>
+          <div class="button-row">
+            <button class="primary-button" id="battlecardButton" type="submit">
+              <i data-lucide="sparkles"></i><span>Generate</span>
+            </button>
+            <button class="ghost-button" id="exportBattlecardButton" type="button">
+              <i data-lucide="download"></i><span>Export</span>
+            </button>
+          </div>
+          <p class="form-message" id="battlecardMessage" role="status"></p>
+        </form>
+
+        <div class="panel battlecard-result">
+          <div class="battlecard-title">
+            <div>
+              <p class="eyebrow" id="battlecardRisk">Risk level</p>
+              <h2 id="battlecardName">Select a competitor</h2>
+            </div>
+            <span class="risk-pill" id="riskPill">Medium</span>
+          </div>
+          <p class="headline" id="battlecardHeadline">The generated battlecard will appear here.</p>
+          <div class="stat-strip" id="battlecardStats"></div>
+          <div class="battlecard-columns">
+            <section>
+              <h3>Strengths</h3>
+              <ul id="strengthList"></ul>
+            </section>
+            <section>
+              <h3>Weaknesses</h3>
+              <ul id="weaknessList"></ul>
+            </section>
+            <section>
+              <h3>Talk Track</h3>
+              <ul id="talkTrackList"></ul>
+            </section>
+            <section>
+              <h3>Moves</h3>
+              <ul id="moveList"></ul>
+            </section>
+          </div>
+          <p class="ai-note" id="battlecardNote"></p>
+        </div>
+      </section>
+
+      <section class="workspace-grid" id="portfolio">
+        <div class="panel chart-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Pricing movement</p>
               <h2>Competitor Price Trends</h2>
             </div>
           </div>
-          <canvas id="priceChart" height="130"></canvas>
+          <canvas id="priceChart" height="135"></canvas>
         </div>
 
         <div class="panel chart-panel">
@@ -94,12 +358,16 @@
       </section>
 
       <section class="workspace-grid lower-grid">
-        <div class="panel" id="competitors">
-          <div class="panel-heading">
+        <div class="panel">
+          <div class="panel-heading table-heading">
             <div>
               <p class="eyebrow">Watchlist</p>
               <h2>Competitor Portfolio</h2>
             </div>
+            <label class="search-field">
+              <span>Search</span>
+              <input id="competitorSearch" type="search" placeholder="Company, category, or region">
+            </label>
           </div>
           <div class="table-wrap">
             <table>
@@ -110,6 +378,8 @@
                   <th>Price</th>
                   <th>Score</th>
                   <th>Growth</th>
+                  <th>Traffic</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody id="competitorRows"></tbody>
@@ -117,7 +387,7 @@
           </div>
         </div>
 
-        <div class="panel" id="markets">
+        <div class="panel">
           <div class="panel-heading">
             <div>
               <p class="eyebrow">Area demand</p>
@@ -129,12 +399,12 @@
         </div>
       </section>
 
-      <section class="workspace-grid lower-grid">
+      <section class="intake-grid" id="intake">
         <form class="panel form-panel" id="competitorForm">
           <div class="panel-heading">
             <div>
-              <p class="eyebrow">Add intelligence</p>
-              <h2>New Competitor</h2>
+              <p class="eyebrow">Watchlist</p>
+              <h2>Add Competitor</h2>
             </div>
           </div>
           <div class="form-grid">
@@ -144,13 +414,102 @@
             <label>Website<input name="website" placeholder="https://"></label>
             <label>Price<input name="current_price" type="number" min="0" step="1" required placeholder="149"></label>
             <label>Market Share<input name="market_share" type="number" min="0" max="100" step="1" placeholder="12"></label>
+            <label>Product Score<input name="product_score" type="number" min="0" max="100" step="1" placeholder="80"></label>
+            <label>Sentiment<input name="sentiment" type="number" min="0" max="100" step="1" placeholder="76"></label>
+            <label>Growth Rate<input name="growth_rate" type="number" step="1" placeholder="8"></label>
+            <label>Traffic Trend %<input name="traffic_trend" type="number" step="1" placeholder="14"></label>
+            <label>Hiring Activity<input name="hiring_activity" type="number" min="0" step="1" placeholder="6"></label>
+            <label>Market Mentions<input name="market_mentions" type="number" min="0" step="1" placeholder="120"></label>
           </div>
           <label>Positioning<textarea name="positioning" rows="3" placeholder="Short positioning summary"></textarea></label>
-          <button class="primary-button full-width" type="submit">Add Competitor</button>
+          <label>Funding News<textarea name="funding_news" rows="2" placeholder="Recent funding, acquisition, or investor signal"></textarea></label>
+          <label>Product Launch<textarea name="product_launch" rows="2" placeholder="Recent feature, product, pricing page, or announcement"></textarea></label>
+          <button class="primary-button full-width" type="submit">
+            <i data-lucide="circle-plus"></i><span>Add Competitor</span>
+          </button>
           <p class="form-message" id="formMessage" role="status"></p>
         </form>
 
-        <div class="panel" id="alerts">
+        <div class="stacked-panels">
+          <form class="panel form-panel" id="priceForm">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Pricing</p>
+                <h2>Log Price</h2>
+              </div>
+            </div>
+            <div class="form-grid">
+              <label>Competitor<select name="competitor_id" id="priceCompetitor" required></select></label>
+              <label>Month<input name="date" type="month" required></label>
+              <label>Price<input name="price" type="number" min="0" step="1" required></label>
+            </div>
+            <button class="ghost-button full-width" type="submit">
+              <i data-lucide="save"></i><span>Save Price</span>
+            </button>
+            <p class="form-message" id="priceMessage" role="status"></p>
+          </form>
+
+          <form class="panel form-panel" id="signalForm">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Markets</p>
+                <h2>Add Signal</h2>
+              </div>
+            </div>
+            <div class="form-grid">
+              <label>Area<input name="area" required placeholder="Singapore"></label>
+              <label>Demand<input name="demand" type="number" min="0" max="100" required placeholder="86"></label>
+              <label>Trend<select name="trend" required><option>Rising</option><option>Stable</option><option>Softening</option></select></label>
+              <label>Category<input name="category" required placeholder="Retail Analytics"></label>
+            </div>
+            <button class="ghost-button full-width" type="submit">
+              <i data-lucide="radio-tower"></i><span>Save Signal</span>
+            </button>
+            <p class="form-message" id="signalMessage" role="status"></p>
+          </form>
+
+          <form class="panel form-panel" id="activitySignalForm">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Competitor activity</p>
+                <h2>Log Growth Signal</h2>
+              </div>
+            </div>
+            <div class="form-grid">
+              <label>Competitor<select name="competitor_id" id="activityCompetitor" required></select></label>
+              <label>Signal Type
+                <select name="type" required>
+                  <option>Traffic</option>
+                  <option>Funding</option>
+                  <option>Hiring</option>
+                  <option>Product Launch</option>
+                  <option>Pricing</option>
+                  <option>Sentiment</option>
+                  <option>Market Mention</option>
+                </select>
+              </label>
+              <label>Sentiment
+                <select name="sentiment" required>
+                  <option>Positive</option>
+                  <option>Neutral</option>
+                  <option>Negative</option>
+                </select>
+              </label>
+              <label>Impact Score<input name="impact_score" type="number" min="0" max="100" required placeholder="75"></label>
+              <label>Metric Value<input name="metric_value" type="number" step="1" placeholder="Optional"></label>
+              <label>Source<input name="source" placeholder="Website, news, careers, reviews"></label>
+            </div>
+            <label>Summary<textarea name="summary" rows="3" required placeholder="What changed and why it matters"></textarea></label>
+            <button class="ghost-button full-width" type="submit">
+              <i data-lucide="radar"></i><span>Save Signal</span>
+            </button>
+            <p class="form-message" id="activitySignalMessage" role="status"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="workspace-grid lower-grid" id="reports">
+        <div class="panel">
           <div class="panel-heading">
             <div>
               <p class="eyebrow">Signals requiring action</p>
@@ -158,24 +517,35 @@
             </div>
           </div>
           <div class="alert-list" id="alertList"></div>
+          <form class="inline-form" id="alertForm">
+            <select name="severity" required><option>High</option><option>Medium</option><option>Low</option></select>
+            <input name="title" required placeholder="Alert title">
+            <input name="message" required placeholder="What changed?">
+            <button class="ghost-button" type="submit">
+              <i data-lucide="bell-plus"></i><span>Add Alert</span>
+            </button>
+          </form>
+          <p class="form-message" id="alertMessage" role="status"></p>
         </div>
-      </section>
 
-      <section class="panel recommendations-panel" id="recommendations">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">AI strategy desk</p>
-            <h2>Recommended Moves</h2>
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">AI strategy desk</p>
+              <h2>Recommended Moves</h2>
+            </div>
+            <span class="source-pill" id="recommendationSource">Rules engine</span>
           </div>
-          <span class="source-pill" id="recommendationSource">Rules engine</span>
+          <div class="recommendation-grid" id="recommendationGrid"></div>
+          <p class="ai-note" id="aiNote"></p>
+          <div class="report-list" id="reportList"></div>
         </div>
-        <div class="recommendation-grid" id="recommendationGrid"></div>
-        <p class="ai-note" id="aiNote"></p>
       </section>
     </main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

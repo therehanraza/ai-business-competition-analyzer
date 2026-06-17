@@ -1,15 +1,29 @@
 # AI Business Competition Analyzer
 
-AI Business Competition Analyzer is a complete Flask + HTML/CSS/JavaScript SaaS-style competitive intelligence platform. It tracks competitors, pricing movement, product performance, market demand, alerts, reports, and AI recommendations powered by Google Gemini.
+A deployable competitive intelligence workspace built with Flask, MongoDB Atlas, Gemini, and a static HTML/CSS/JavaScript frontend.
 
-## Tech Stack
+The main showcase feature is the AI Competitor Intelligence Command Center. Add competitor websites/companies, log pricing, traffic, funding, hiring, product launch, sentiment, and market-mention signals, then generate alerts, predictions, battlecards, strategic recommendations, reports, and natural-language copilot answers. If `GEMINI_API_KEY` is not configured, the app falls back to a local rules engine so demos still work.
 
-- Frontend: HTML, CSS, JavaScript, Chart.js
-- Backend: Python, Flask
-- Database: MongoDB Atlas, with a local JSON development fallback
-- AI: Google Gemini API using `gemini-2.5-flash`
-- Environment: `.env`
-- Version Control: Git
+## Features Completed
+
+- SaaS-style dashboard with competitor, pricing, demand, alert, and recommendation views.
+- Top-of-page AI competitor intelligence center with positive/negative developments, traffic trends, market mentions, top-watch signals, opportunities, and threats.
+- Competitor activity tracking for traffic, funding, hiring, product launches, pricing, sentiment, and market mentions.
+- Real-time generated alerts and likely-next-move predictions from growth and activity signals.
+- AI copilot endpoint and UI for natural-language competitive-positioning questions.
+- AI Battlecard Generator with Gemini support and rules-engine fallback.
+- Battlecard history API with optional non-persistent previews.
+- Competitor watchlist create flow.
+- Price history logging and chart refresh.
+- Market signal intake and regional demand chart.
+- Alert intake, status updates, and open-alert tracking.
+- Report brief creation, report history, and JSON export.
+- Full backend CRUD for competitors, prices, market signals, alerts, reports, and battlecards.
+- Backend unit tests against an isolated local JSON store.
+- MongoDB Atlas support with local JSON fallback for development.
+- Production CORS configuration through `ALLOWED_ORIGINS`.
+- Render backend deployment config in `render.yaml`.
+- Vercel frontend deployment config in `frontend/vercel.json`.
 
 ## Project Structure
 
@@ -23,56 +37,85 @@ AI_Business_Competition_Analyzer/
     index.html
     styles.css
     app.js
-  .gitignore
+    vercel.json
+  render.yaml
   README.md
 ```
 
-## File Purposes
-
-- `backend/app.py`: Complete Flask API with dashboard metrics, competitor CRUD, pricing history, market signals, alerts, reports, MongoDB Atlas support, local development storage, and Gemini recommendations.
-- `backend/requirements.txt`: Python dependencies required to run the backend locally or on Render.
-- `backend/.env.example`: Environment variable template for MongoDB Atlas, Gemini, Flask, and CORS settings.
-- `frontend/index.html`: Single-page SaaS dashboard layout.
-- `frontend/styles.css`: Responsive premium analytics UI styling.
-- `frontend/app.js`: Frontend API integration, Chart.js rendering, form handling, recommendations, and health checks.
-- `.gitignore`: Keeps secrets, virtual environments, caches, and generated local data out of Git.
-
 ## Local Setup
 
-1. Open a terminal in this folder.
-2. Create and activate a Python virtual environment.
+Start the Flask API:
 
 ```powershell
-cd "C:\Users\Rehan Raza\Documents\AI_Business_Competition_Analyzer\backend"
+cd "C:\Users\Rehan Raza\OneDrive\Desktop\AI_Business_Competition_Analyzer\backend"
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 copy .env.example .env
-```
-
-3. Edit `backend/.env` and add your keys.
-
-```env
-MONGODB_URI=mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
-MONGODB_DATABASE=ai_business_competition_analyzer
-GEMINI_API_KEY=your_google_ai_studio_key
-GEMINI_MODEL=gemini-2.5-flash
-```
-
-4. Start the backend.
-
-```powershell
 python app.py
 ```
 
-5. Open the frontend.
+Start the frontend in a second terminal:
 
 ```powershell
-cd "C:\Users\Rehan Raza\Documents\AI_Business_Competition_Analyzer\frontend"
+cd "C:\Users\Rehan Raza\OneDrive\Desktop\AI_Business_Competition_Analyzer\frontend"
 python -m http.server 5500
 ```
 
-Then visit `http://127.0.0.1:5500`.
+Open `http://127.0.0.1:5500`.
+
+## Environment Variables
+
+Backend variables:
+
+```env
+FLASK_ENV=production
+FLASK_DEBUG=0
+PORT=5000
+MONGODB_URI=mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+MONGODB_DATABASE=ai_business_competition_analyzer
+LOCAL_DATA_PATH=
+GEMINI_API_KEY=your_google_ai_studio_key
+GEMINI_MODEL=gemini-flash-latest
+ALLOWED_ORIGINS=https://your-vercel-domain.vercel.app,http://localhost:5500,http://127.0.0.1:5500
+```
+
+## Deploy Backend To Render
+
+1. Push this repository to GitHub.
+2. In Render, create a new Blueprint and select this repo.
+3. Render will read `render.yaml`.
+4. Add these secret environment variables when prompted:
+   - `MONGODB_URI`
+   - `GEMINI_API_KEY`
+   - `ALLOWED_ORIGINS`
+5. Deploy the service.
+
+The expected backend URL is:
+
+```text
+https://ai-business-competition-analyzer-api.onrender.com
+```
+
+If you choose a different Render service name, update `frontend/vercel.json`.
+
+## Deploy Frontend To Vercel
+
+1. Create a Vercel project from the same GitHub repo.
+2. Set the Vercel project root directory to `frontend`.
+3. Confirm `frontend/vercel.json` points `/api/*` to your Render backend URL.
+4. Deploy.
+5. Add the Vercel production URL to the backend `ALLOWED_ORIGINS` value in Render.
+
+## MongoDB Atlas Setup
+
+1. Create an Atlas cluster.
+2. Create a database user with read/write permissions.
+3. Allow access from Render. For a quick demo, `0.0.0.0/0` works, but production should use tighter network access.
+4. Copy the connection string into Render as `MONGODB_URI`.
+5. Keep `MONGODB_DATABASE=ai_business_competition_analyzer`.
+
+The backend seeds starter competitors, price history, market signals, and alerts when the MongoDB `competitors` collection is empty.
 
 ## API Endpoints
 
@@ -80,17 +123,55 @@ Then visit `http://127.0.0.1:5500`.
 - `GET /api/dashboard`
 - `GET /api/competitors`
 - `POST /api/competitors`
+- `GET /api/competitors/<competitor_id>`
 - `PUT /api/competitors/<competitor_id>`
 - `DELETE /api/competitors/<competitor_id>`
+- `GET /api/prices`
+- `GET /api/price-history`
 - `POST /api/prices`
+- `GET /api/prices/<price_id>`
+- `PUT /api/prices/<price_id>`
+- `DELETE /api/prices/<price_id>`
+- `GET /api/market-signals`
 - `POST /api/market-signals`
+- `GET /api/market-signals/<signal_id>`
+- `PUT /api/market-signals/<signal_id>`
+- `DELETE /api/market-signals/<signal_id>`
+- `GET /api/activity-signals`
+- `POST /api/activity-signals`
+- `GET /api/activity-signals/<signal_id>`
+- `PUT /api/activity-signals/<signal_id>`
+- `DELETE /api/activity-signals/<signal_id>`
+- `GET /api/intelligence`
+- `POST /api/copilot`
+- `GET /api/alerts`
 - `POST /api/alerts`
+- `GET /api/alerts/<alert_id>`
+- `PUT /api/alerts/<alert_id>`
+- `PATCH /api/alerts/<alert_id>/status`
+- `DELETE /api/alerts/<alert_id>`
+- `GET /api/reports`
 - `POST /api/reports`
+- `GET /api/reports/<report_id>`
+- `DELETE /api/reports/<report_id>`
+- `GET /api/reports/<report_id>/export`
 - `GET /api/recommendations`
+- `POST /api/battlecard`
+- `GET /api/battlecards`
+- `POST /api/battlecards`
+- `GET /api/battlecards/<battlecard_id>`
+- `DELETE /api/battlecards/<battlecard_id>`
 
-## Deployment Notes
+## Backend Tests
 
-- Frontend can be deployed to Vercel as a static site from the `frontend` folder.
-- Backend can be deployed to Render using `backend/app.py` and `backend/requirements.txt`.
-- MongoDB Atlas should be connected through `MONGODB_URI`.
-- Gemini should be connected through `GEMINI_API_KEY`.
+```powershell
+cd "C:\Users\Rehan Raza\OneDrive\Desktop\AI_Business_Competition_Analyzer"
+.\backend\.venv\Scripts\python.exe -m unittest discover -s backend -p "test_*.py" -v
+```
+
+## Production Notes
+
+- The frontend uses `http://127.0.0.1:5000` only on localhost.
+- In production, the frontend calls `/api`, and Vercel rewrites those calls to Render.
+- The backend still works without MongoDB, but Render's filesystem is ephemeral, so MongoDB Atlas is required for persistent production data.
+- The app works without Gemini, but battlecards and recommendations use the rules engine until `GEMINI_API_KEY` is set.
