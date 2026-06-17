@@ -141,17 +141,22 @@ class BackendApiTest(unittest.TestCase):
     def test_ai_enrichment_and_tracking_flow(self):
         enriched = self.post_json(
             "/api/enrich-competitor",
-            {"name": "ShopSignal AI", "website": "https://shopsignal.ai"},
+            {"name": "ChatGPT", "website": "https://chatgpt.com", "region": "India"},
         )
         self.assertEqual(enriched.status_code, 200)
-        self.assertEqual(enriched.json["profile"]["name"], "ShopSignal AI")
+        self.assertEqual(enriched.json["profile"]["name"], "ChatGPT")
+        self.assertEqual(enriched.json["profile"]["region"], "India")
         self.assertTrue(enriched.json["insights"])
         self.assertIn("activity_signal", enriched.json)
+        plan_names = [plan["name"] for plan in enriched.json["profile"]["pricing_plans"]]
+        self.assertIn("Free", plan_names)
+        self.assertIn("Plus", plan_names)
+        self.assertIn("Enterprise", plan_names)
 
         tracked = self.post_json("/api/track-competitor", {"enrichment": enriched.json})
         self.assertEqual(tracked.status_code, 201)
         competitor_id = tracked.json["competitor"]["_id"]
-        self.assertEqual(tracked.json["competitor"]["name"], "ShopSignal AI")
+        self.assertEqual(tracked.json["competitor"]["name"], "ChatGPT")
 
         detail = self.client.get(f"/api/competitors/{competitor_id}")
         self.assertEqual(detail.status_code, 200)

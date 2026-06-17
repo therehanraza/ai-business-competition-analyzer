@@ -1272,6 +1272,26 @@ def infer_region(website=""):
     return "Global"
 
 
+def pricing_plans_for_company(name, category, current_price):
+    text = name.lower()
+    if "chatgpt" in text or "openai" in text:
+        return [
+            {"name": "Free", "price": 0, "billing": "monthly", "audience": "individuals", "note": "Entry plan with limited access."},
+            {"name": "Go", "price": None, "billing": "monthly", "audience": "individuals", "note": "Expanded access; official price varies by country."},
+            {"name": "Plus", "price": None, "billing": "monthly", "audience": "individuals", "note": "Advanced reasoning, projects, tasks, and custom GPTs."},
+            {"name": "Pro", "price": None, "billing": "monthly", "audience": "power users", "note": "Higher usage and pro reasoning access."},
+            {"name": "Business", "price": None, "billing": "per user/month", "audience": "teams", "note": "Business workspace plan; starts at 2 users."},
+            {"name": "Enterprise", "price": None, "billing": "custom", "audience": "large organizations", "note": "Custom pricing, admin, security, and enterprise controls."},
+        ]
+    low_price = max(0, round(current_price * 0.55))
+    return [
+        {"name": "Starter", "price": low_price, "billing": "monthly", "audience": "small teams", "note": f"Entry {category.lower()} package."},
+        {"name": "Growth", "price": current_price, "billing": "monthly", "audience": "mid-market teams", "note": "Main plan used for price-position comparison."},
+        {"name": "Business", "price": round(current_price * 1.65), "billing": "monthly", "audience": "larger teams", "note": "More usage, seats, and workflow controls."},
+        {"name": "Enterprise", "price": None, "billing": "custom", "audience": "enterprise buyers", "note": "Custom quote for security, scale, and support."},
+    ]
+
+
 def local_competitor_enrichment(payload):
     name = clean_string(payload.get("name") or payload.get("business_name"))
     website = clean_string(payload.get("website"))
@@ -1314,12 +1334,14 @@ def local_competitor_enrichment(payload):
         "funding_news": "No verified funding event is connected yet; keep this company on the funding watchlist.",
         "product_launch": f"AI enrichment suggests {name} recently {launch_focus}.",
     }
+    profile["pricing_plans"] = pricing_plans_for_company(name, category, current_price)
     return {
         "source": "AI enrichment model",
         "confidence": "Estimated",
         "profile": profile,
         "insights": [
             f"{name} is most relevant to the {category} category.",
+            f"Market focus is set to {region}; dashboard demand and recommendations will prioritize that country/region.",
             f"Initial signal model estimates {traffic_trend}% traffic movement and {market_mentions} market mentions.",
             "The system will track pricing, launch, hiring, traffic, sentiment, and market-mention changes after this company is added.",
         ],
@@ -1377,6 +1399,15 @@ def ask_gemini_enrichment(payload):
                 "market_mentions": "number",
                 "funding_news": "string",
                 "product_launch": "string",
+                "pricing_plans": [
+                    {
+                        "name": "string",
+                        "price": "number or null when custom/varies",
+                        "billing": "string",
+                        "audience": "string",
+                        "note": "string",
+                    }
+                ],
             },
             "insights": ["string"],
             "activity_signal": {
@@ -1410,6 +1441,19 @@ def normalize_enrichment(enrichment):
     profile, error = competitor_payload(enrichment.get("profile", {}))
     if error:
         return None, error
+    raw_plans = enrichment.get("profile", {}).get("pricing_plans", [])
+    if isinstance(raw_plans, list):
+        profile["pricing_plans"] = [
+            {
+                "name": clean_string(plan.get("name"), "Plan"),
+                "price": None if plan.get("price") in (None, "") else clamp_number(plan.get("price"), 0, 10_000_000, 0),
+                "billing": clean_string(plan.get("billing"), "monthly"),
+                "audience": clean_string(plan.get("audience"), "customers"),
+                "note": clean_string(plan.get("note"), ""),
+            }
+            for plan in raw_plans
+            if isinstance(plan, dict)
+        ]
     activity = enrichment.get("activity_signal") or {}
     market = enrichment.get("market_signal") or {}
     enrichment["profile"] = profile

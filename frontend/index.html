@@ -229,6 +229,10 @@
             </button>
           </div>
           <p class="ai-note" id="analysisNote"></p>
+          <div class="explanation-grid compact-explain">
+            <article><strong>How pressure is calculated</strong><span>It weighs competitor product score, market share, growth, sentiment, traffic trend, activity signals, and pricing gap.</span></article>
+            <article><strong>How opportunity is calculated</strong><span>It combines your product score, selected region demand, competitor weaknesses, and whether your price is value, aligned, or premium.</span></article>
+          </div>
         </div>
       </section>
 
@@ -414,6 +418,18 @@
           <div class="form-grid">
             <label>Competitor Name<input name="name" required placeholder="Shopify, HubSpot, PriceHawk"></label>
             <label>Website<input name="website" placeholder="https://company.com"></label>
+            <label>Target Country / Region
+              <select name="region">
+                <option>Global</option>
+                <option>India</option>
+                <option>United States</option>
+                <option>United Kingdom</option>
+                <option>Europe</option>
+                <option>Asia Pacific</option>
+                <option>Middle East</option>
+                <option>Latin America</option>
+              </select>
+            </label>
           </div>
           <div class="button-row">
             <button class="primary-button" id="enrichButton" type="submit">
@@ -428,6 +444,20 @@
           </div>
           <p class="form-message" id="discoveryMessage" role="status"></p>
         </form>
+
+        <div class="panel explanation-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Workflow</p>
+              <h2>Where AI Is Used</h2>
+            </div>
+          </div>
+          <div class="explanation-grid">
+            <article><strong>Enrichment</strong><span>AI converts a name, website, and country into category, positioning, plans, demand, launch, traffic, and market mentions.</span></article>
+            <article><strong>Tracking</strong><span>Start Tracking saves the profile, pricing history, activity signal, and country-specific market signal.</span></article>
+            <article><strong>Strategy</strong><span>The analyzer compares your business against tracked competitors to produce SWOT, threats, battlecards, and actions.</span></article>
+          </div>
+        </div>
 
         <form class="panel form-panel" id="competitorForm">
           <div class="panel-heading">

@@ -406,6 +406,26 @@ function inferDiscoveryRegion(website = "") {
   return "Global";
 }
 
+function pricingPlansForCompany(name, category, currentPrice) {
+  const text = name.toLowerCase();
+  if (text.includes("chatgpt") || text.includes("openai")) {
+    return [
+      { name: "Free", price: 0, billing: "monthly", audience: "individuals", note: "Entry plan with limited access." },
+      { name: "Go", price: null, billing: "monthly", audience: "individuals", note: "Expanded access; official price varies by country." },
+      { name: "Plus", price: null, billing: "monthly", audience: "individuals", note: "Advanced intelligence, projects, tasks, and custom GPTs." },
+      { name: "Pro", price: null, billing: "monthly", audience: "power users", note: "Higher usage and pro reasoning access." },
+      { name: "Business", price: null, billing: "per user/month", audience: "teams", note: "Team workspace plan; official price varies by billing and region." },
+      { name: "Enterprise", price: null, billing: "custom", audience: "large organizations", note: "Custom pricing, admin, security, and enterprise controls." },
+    ];
+  }
+  return [
+    { name: "Starter", price: Math.max(0, Math.round(currentPrice * 0.55)), billing: "monthly", audience: "small teams", note: `Entry ${category.toLowerCase()} package.` },
+    { name: "Growth", price: currentPrice, billing: "monthly", audience: "mid-market teams", note: "Main plan used for price-position comparison." },
+    { name: "Business", price: Math.round(currentPrice * 1.65), billing: "monthly", audience: "larger teams", note: "More usage, seats, and workflow controls." },
+    { name: "Enterprise", price: null, billing: "custom", audience: "enterprise buyers", note: "Custom quote for security, scale, and support." },
+  ];
+}
+
 function buildLocalEnrichment(payload) {
   const name = clean_string(payload.name || payload.business_name);
   const website = clean_string(payload.website);
@@ -434,12 +454,14 @@ function buildLocalEnrichment(payload) {
     funding_news: "No verified funding event is connected yet; keep this company on the funding watchlist.",
     product_launch: `AI enrichment suggests ${name} recently expanded ${category.toLowerCase()} workflows.`,
   };
+  profile.pricing_plans = pricingPlansForCompany(name, category, currentPrice);
   return {
     source: "Local intelligence engine",
     confidence: "Estimated",
     profile,
     insights: [
       `${name} is most relevant to the ${category} category.`,
+      `Market focus is set to ${region}; demand and recommendations will prioritize that country/region.`,
       `Initial signal model estimates ${profile.traffic_trend}% traffic movement and ${profile.market_mentions} market mentions.`,
       "The system will track pricing, launch, hiring, traffic, sentiment, and market-mention changes after this company is added.",
     ],
@@ -1173,20 +1195,35 @@ function fillCompetitorForm(profile) {
 function renderEnrichment(enrichment) {
   state.enrichment = enrichment;
   const profile = enrichment.profile || {};
+  const planCards = (profile.pricing_plans || []).map((plan) => `
+    <article>
+      <span>${escapeHtml(plan.billing || "monthly")}</span>
+      <strong>${escapeHtml(plan.name || "Plan")}</strong>
+      <small>${plan.price === null || plan.price === undefined ? "Custom / varies" : money(plan.price)}</small>
+      <p>${escapeHtml(plan.note || plan.audience || "")}</p>
+    </article>
+  `).join("");
   byId("discoverySource").textContent = enrichment.source || "AI enrichment";
   byId("trackEnrichedButton").disabled = false;
   byId("enrichmentPreview").innerHTML = `
     <div class="enrichment-card">
       <div>
-        <span>${escapeHtml(profile.category || "Category")}</span>
+        <span>${escapeHtml(profile.category || "Category")} - ${escapeHtml(profile.region || "Global")}</span>
         <strong>${escapeHtml(profile.name || "Company")}</strong>
         <p>${escapeHtml(profile.positioning || "")}</p>
       </div>
       <div class="enrichment-stats">
-        <article><span>Price</span><strong>${money(profile.current_price)}</strong></article>
+        <article><span>Main price signal</span><strong>${money(profile.current_price)}</strong></article>
         <article><span>Score</span><strong>${escapeHtml(profile.product_score || 0)}/100</strong></article>
         <article><span>Growth</span><strong>${escapeHtml(profile.growth_rate || 0)}%</strong></article>
         <article><span>Mentions</span><strong>${number(profile.market_mentions || 0)}</strong></article>
+      </div>
+      <div class="plan-grid">
+        <div class="plan-grid-heading">
+          <strong>Pricing plans detected</strong>
+          <span>Main price is only the comparable plan signal used in charts.</span>
+        </div>
+        ${planCards || `<article><strong>No plans detected</strong><p>Add pricing manually after tracking.</p></article>`}
       </div>
       <ul>${listItems(enrichment.insights || [])}</ul>
     </div>
