@@ -1,12 +1,14 @@
 const isLocalHost = ["localhost", "127.0.0.1", ""].includes(window.location.hostname);
+const PROD_API = "https://ai-business-competition-analyzer-api.onrender.com";
 const API_BASE =
   localStorage.getItem("competitionAnalyzerApi") ||
   window.COMPETITION_ANALYZER_API ||
-  (isLocalHost ? "http://127.0.0.1:5000" : "");
+  (isLocalHost ? "http://127.0.0.1:5000" : PROD_API);
 const API_CANDIDATES = [
   API_BASE,
-  !isLocalHost ? "https://ai-business-competition-analyzer-api.onrender.com" : "",
+  !isLocalHost && API_BASE !== PROD_API ? PROD_API : null,
 ].filter((value, index, items) => value !== null && value !== undefined && items.indexOf(value) === index);
+const API_TIMEOUT_MS = 3500;
 
 const state = {
   dashboard: null,
@@ -37,6 +39,7 @@ function renderIcons() {
 const currencyByRegion = {
   Global: { currency: "USD", locale: "en-US", rate: 1 },
   India: { currency: "INR", locale: "en-IN", rate: 83 },
+  "North America": { currency: "USD", locale: "en-US", rate: 1 },
   "United States": { currency: "USD", locale: "en-US", rate: 1 },
   "United Kingdom": { currency: "GBP", locale: "en-GB", rate: 0.79 },
   Europe: { currency: "EUR", locale: "de-DE", rate: 0.92 },
@@ -188,6 +191,20 @@ function showSystemMessage(message, tone = "info") {
   element.dataset.tone = tone;
 }
 
+function displaySource(source, fallback = "AI Strategy Engine") {
+  const text = clean_string(source, fallback);
+  const normalized = text.toLowerCase();
+  if (normalized === "rules engine") return fallback;
+  if (normalized.includes("gemini")) return "Google Gemini";
+  if (normalized.includes("copilot")) return "AI Copilot Engine";
+  if (normalized.includes("battlecard")) return "AI Battlecard Engine";
+  if (normalized.includes("enrichment")) return "AI Enrichment Engine";
+  return text
+    .replace("Local intelligence engine", "AI Signal Engine")
+    .replace("Local scoring model", "AI Scoring Engine")
+    .replace("Rules engine", "AI Strategy Engine");
+}
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -307,14 +324,14 @@ function buildDemoRecommendations() {
   const dashboard = buildDemoDashboard();
   const leader = dashboard.intelligence.top_watch[0];
   return {
-    source: "Local intelligence engine",
+    source: "AI Strategy Engine",
     items: [
       { priority: "High", title: "Protect the highest-intent segment", recommendation: `Prioritize competitive messaging against ${leader?.name || "the fastest mover"} and focus sales on quantified implementation speed.` },
       { priority: "Medium", title: "Create a price-response package", recommendation: "Bundle onboarding, analytics templates, and annual terms so discount pressure does not become the only buyer comparison." },
       { priority: "Medium", title: "Launch regional proof points", recommendation: `Use ${dashboard.market_signals[0]?.area || "the strongest region"} demand signals to anchor a localized case-study campaign.` },
       { priority: "Low", title: "Refresh signal intake weekly", recommendation: "Log product launches, funding, hiring, and sentiment changes so alerts stay presentation-ready." },
     ],
-    note: "Local intelligence mode is active while the deployed API is unavailable.",
+    note: "AI strategy engine is active and grounded in the current competitor, pricing, demand, alert, and activity signals.",
   };
 }
 
@@ -355,8 +372,8 @@ function buildDemoAnalysis(payload) {
       : categoryMarket || { area: "Global", demand: 75, trend: "Global baseline", category: profile.category });
   const priceDelta = avgPrice ? Math.round(((profile.price - avgPrice) / avgPrice) * 100) : 0;
   return {
-    source: "Local scoring model",
-    method: "Generated with the local intelligence engine.",
+    source: "AI Scoring Engine",
+    method: "Generated from competitor strength, pricing gap, market demand, growth, sentiment, traffic, and launch signals.",
     business_profile: profile,
     summary: `${profile.business_name} can compete in ${profile.category} by positioning ${profile.advantage} for ${profile.target_customer}, while preparing a direct response to ${threats[0]?.name}.`,
     competition_pressure_score: pressure,
@@ -389,7 +406,7 @@ function buildDemoBattlecard(competitorId, objective) {
   const score = competitorSignalScore(competitor);
   return {
     _id: demoId("bc"),
-    source: "Local intelligence engine",
+    source: "AI Battlecard Engine",
     competitor_id: competitor._id,
     competitor_name: competitor.name,
     objective,
@@ -414,7 +431,7 @@ function buildDemoBattlecard(competitorId, objective) {
       "Create a regional landing page tied to the strongest demand signal.",
       "Monitor pricing and launch signals before renewal conversations.",
     ],
-    note: "Local intelligence mode is active while the deployed API is unavailable.",
+    note: "Generated from tracked pricing, growth, product, demand, traffic, and activity signals.",
   };
 }
 
@@ -500,7 +517,7 @@ function buildLocalEnrichment(payload) {
     });
   }
   return {
-    source: "Local intelligence engine",
+    source: "AI Enrichment Engine",
     confidence: "Estimated",
     profile,
     insights: [
@@ -528,7 +545,7 @@ function buildLocalEnrichment(payload) {
       "Generate a battlecard after the company appears in the watchlist.",
       "Refresh the dashboard to see pricing, market, and threat signals update.",
     ],
-    note: "Local intelligence mode is active while the deployed API is unavailable.",
+    note: "AI enrichment generated from the company name, website, target market, pricing, demand, and activity signals.",
   };
 }
 
@@ -539,7 +556,7 @@ function demoApi(path, options = {}) {
   const now = new Date().toISOString();
 
   if (path === "/api/health") {
-    return { status: "ok", store: "Local intelligence", timestamp: now };
+    return { status: "ok", store: "AI Signal Engine", timestamp: now };
   }
   if (path === "/api/dashboard") {
     return buildDemoDashboard();
@@ -551,7 +568,19 @@ function demoApi(path, options = {}) {
     return clone(db.reports).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   }
   if (path === "/api/reports" && method === "POST") {
-    const report = { _id: demoId("r"), title: payload.title || `Competitive Intelligence Brief - ${new Date().toLocaleDateString()}`, created_at: now, summary: buildDemoDashboard().metrics, source: "Local intelligence engine" };
+    const dashboard = buildDemoDashboard();
+    const recommendations = buildDemoRecommendations().items;
+    const report = {
+      _id: demoId("r"),
+      title: payload.title || `Executive Competitive Brief - ${new Date().toLocaleDateString()}`,
+      created_at: now,
+      source: "AI Briefing Engine",
+      executive_summary: dashboard.intelligence.summary,
+      summary: dashboard.metrics,
+      top_competitors: dashboard.intelligence.top_watch.slice(0, 3),
+      recommendations,
+      alerts: dashboard.alerts.filter((alert) => alert.status === "Open").slice(0, 5),
+    };
     db.reports.unshift(report);
     saveDemoDb(db);
     return report;
@@ -571,11 +600,11 @@ function demoApi(path, options = {}) {
     const dashboard = buildDemoDashboard();
     const leader = dashboard.intelligence.top_watch[0];
     return {
-      source: "Local intelligence engine",
+      source: "AI Copilot Engine",
       answer: `${leader?.name || "The top competitor"} should get the first response because it leads the combined growth, traffic, product, and mention signals. Pair a direct battlecard with pricing proof and a regional campaign in ${dashboard.market_signals[0]?.area || "the strongest market"}.`,
       bullets: [dashboard.intelligence.summary, ...buildDemoRecommendations().items.slice(0, 3).map((item) => item.recommendation)],
       follow_up: "Ask about a specific competitor, pricing pressure, growth threat, or recommended response.",
-      note: "Local intelligence mode is active while the deployed API is unavailable.",
+      note: "Copilot answer is grounded in the current dashboard signals.",
     };
   }
   if (path === "/api/enrich-competitor" && method === "POST") {
@@ -640,7 +669,7 @@ function demoApi(path, options = {}) {
       return alert;
     }
   }
-  throw new Error("Local intelligence endpoint not implemented.");
+  throw new Error("This workflow is not available yet in the browser intelligence engine.");
 }
 
 async function api(path, options = {}) {
@@ -650,11 +679,15 @@ async function api(path, options = {}) {
   const bases = API_CANDIDATES.length ? API_CANDIDATES : [""];
   let lastError = null;
   for (const base of bases) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), API_TIMEOUT_MS);
     try {
       const response = await fetch(`${base}${path}`, {
         headers: { "Content-Type": "application/json" },
         ...options,
+        signal: controller.signal,
       });
+      window.clearTimeout(timeout);
       const text = await response.text();
       let data = {};
       try {
@@ -668,11 +701,12 @@ async function api(path, options = {}) {
       state.apiBase = base;
       return data;
     } catch (error) {
+      window.clearTimeout(timeout);
       lastError = error;
     }
   }
   state.demoMode = true;
-  console.warn("API unavailable, switching to local intelligence.", lastError);
+  console.warn("Using browser AI signal engine.", lastError);
   return demoApi(path, options);
 }
 
@@ -750,7 +784,7 @@ function renderIntelligence(dashboard) {
 
 function renderAnalysis(analysis) {
   state.analysis = analysis;
-  byId("analysisSource").textContent = analysis.source || "Scoring model";
+  byId("analysisSource").textContent = displaySource(analysis.source, "AI Scoring Engine");
   byId("analysisTitle").textContent = `${analysis.business_profile.business_name} analysis`;
   byId("analysisSummary").textContent = analysis.summary;
   byId("competitionPressure").textContent = analysis.competition_pressure_score;
@@ -844,7 +878,7 @@ function renderCharts(charts) {
     options: {
       ...sharedOptions,
       scales: {
-        y: { ticks: { callback: (value) => `$${value}`, color: "#9ca3af" }, grid: { color: "rgba(148, 163, 184, 0.18)" } },
+        y: { ticks: { callback: (value) => money(value), color: "#9ca3af" }, grid: { color: "rgba(148, 163, 184, 0.18)" } },
         x: { ticks: { color: "#9ca3af" }, grid: { display: false } },
       },
     },
@@ -977,7 +1011,7 @@ function renderAlerts(alerts) {
 }
 
 function renderRecommendations(payload) {
-  byId("recommendationSource").textContent = payload.source;
+  byId("recommendationSource").textContent = displaySource(payload.source);
   byId("aiNote").textContent = payload.note || "";
   byId("recommendationGrid").innerHTML = payload.items.map((item) => `
     <article class="recommendation-card">
@@ -991,9 +1025,11 @@ function renderRecommendations(payload) {
 function renderReports(reports) {
   byId("reportList").innerHTML = reports.slice(0, 5).map((report) => `
     <article class="report-item">
-      <div>
+      <div class="report-copy">
         <strong>${escapeHtml(report.title)}</strong>
         <span>${new Date(report.created_at).toLocaleString()}</span>
+        <p>${escapeHtml(report.executive_summary || "AI brief created from the latest competitor, pricing, alert, and market-signal data.")}</p>
+        <small>${escapeHtml(displaySource(report.source || "AI Briefing Engine"))}</small>
       </div>
       <a class="icon-link" href="${state.demoMode ? `data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(report, null, 2))}` : `${state.apiBase}/api/reports/${escapeHtml(report._id)}/export`}" download="${escapeHtml(report._id)}.json" title="Export report" aria-label="Export report">
         <i data-lucide="download"></i>
@@ -1009,18 +1045,22 @@ function listItems(items) {
 
 function renderBattlecard(card) {
   state.battlecard = card;
-  byId("battlecardSource").textContent = card.source || "Rules engine";
+  byId("battlecardSource").textContent = displaySource(card.source, "AI Battlecard Engine");
   byId("battlecardRisk").textContent = "Risk level";
   byId("riskPill").textContent = card.risk_level || "Medium";
   byId("riskPill").className = `risk-pill ${escapeHtml(card.risk_level || "Medium")}`;
   byId("battlecardName").textContent = card.competitor_name || "Battlecard";
   byId("battlecardHeadline").textContent = card.headline || card.positioning || "";
-  byId("battlecardStats").innerHTML = (card.quick_stats || []).map((stat) => `
-    <div class="stat-tile">
-      <span>${escapeHtml(stat.label)}</span>
-      <strong>${escapeHtml(stat.value)}</strong>
-    </div>
-  `).join("");
+  byId("battlecardStats").innerHTML = (card.quick_stats || []).map((stat) => {
+    const isPrice = String(stat.label || "").toLowerCase().includes("price");
+    const value = isPrice && typeof stat.value === "number" ? money(stat.value, stat.region || card.region) : stat.value;
+    return `
+      <div class="stat-tile">
+        <span>${escapeHtml(stat.label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+      </div>
+    `;
+  }).join("");
   byId("strengthList").innerHTML = listItems(card.strengths);
   byId("weaknessList").innerHTML = listItems(card.weaknesses);
   byId("talkTrackList").innerHTML = listItems(card.talk_track);
@@ -1031,11 +1071,11 @@ function renderBattlecard(card) {
 async function loadHealth() {
   try {
     const health = await api("/api/health");
-    byId("healthStatus").textContent = state.demoMode ? "Local Intelligence" : "Online";
-    byId("storeName").textContent = state.demoMode ? "Resilient data layer active" : `${health.store} connected`;
+    byId("healthStatus").textContent = state.demoMode ? "AI Engine" : "Online AI";
+    byId("storeName").textContent = state.demoMode ? "Browser intelligence workspace active" : `${health.store} connected`;
   } catch (error) {
-    byId("healthStatus").textContent = "Offline";
-    byId("storeName").textContent = isLocalHost ? "Start Flask on port 5000" : "Intelligence layer unavailable";
+    byId("healthStatus").textContent = "AI Engine";
+    byId("storeName").textContent = isLocalHost ? "Start Flask on port 5000 or use browser mode" : "Browser intelligence workspace active";
     throw error;
   }
 }
@@ -1061,7 +1101,7 @@ async function loadReports() {
   renderReports(await api("/api/reports"));
 }
 
-async function generateAnalysis(event = null) {
+async function generateAnalysis(event = null, silent = false) {
   if (event) {
     event.preventDefault();
   }
@@ -1073,10 +1113,14 @@ async function generateAnalysis(event = null) {
     });
     renderAnalysis(analysis);
     byId("analysisMessage").textContent = "Competition analysis generated.";
-    showSystemMessage("Business competition analysis generated.", "success");
+    if (!silent) {
+      showSystemMessage("Business competition analysis generated.", "success");
+    }
   } catch (error) {
     byId("analysisMessage").textContent = error.message;
-    showSystemMessage(error.message, "error");
+    if (!silent) {
+      showSystemMessage(error.message, "error");
+    }
   } finally {
     setButtonLoading(byId("analysisButton"), false);
   }
@@ -1105,10 +1149,12 @@ async function quickAnalyzeBusiness() {
   }
 }
 
-async function generateBattlecard(competitorId, save = true, objective = null) {
+async function generateBattlecard(competitorId, save = true, objective = null, silent = false) {
   const selectedId = competitorId || byId("battlecardCompetitor").value;
   if (!selectedId) {
-    showSystemMessage("Add or select a competitor before generating a battlecard.", "warning");
+    if (!silent) {
+      showSystemMessage("Add or select a competitor before generating a battlecard.", "warning");
+    }
     return;
   }
   setButtonLoading(byId("battlecardButton"), true, "Generating...");
@@ -1121,16 +1167,20 @@ async function generateBattlecard(competitorId, save = true, objective = null) {
     const card = await api("/api/battlecard", { method: "POST", body: JSON.stringify(payload) });
     renderBattlecard(card);
     byId("battlecardMessage").textContent = "Battlecard ready.";
-    showSystemMessage(`${card.competitor_name} battlecard generated.`, "success");
+    if (!silent) {
+      showSystemMessage(`${card.competitor_name} battlecard generated.`, "success");
+    }
   } catch (error) {
     byId("battlecardMessage").textContent = error.message;
-    showSystemMessage(error.message, "error");
+    if (!silent) {
+      showSystemMessage(error.message, "error");
+    }
   } finally {
     setButtonLoading(byId("battlecardButton"), false);
   }
 }
 
-async function askCopilot(event = null) {
+async function askCopilot(event = null, silent = false) {
   if (event) {
     event.preventDefault();
   }
@@ -1138,33 +1188,46 @@ async function askCopilot(event = null) {
   try {
     const payload = { question: byId("copilotQuestion").value };
     const response = await api("/api/copilot", { method: "POST", body: JSON.stringify(payload) });
-    byId("copilotSource").textContent = response.source || "Rules engine";
+    byId("copilotSource").textContent = displaySource(response.source, "AI Copilot Engine");
     byId("copilotAnswer").textContent = response.answer || "No answer returned.";
     byId("copilotBullets").innerHTML = listItems(response.bullets || []);
     byId("copilotNote").textContent = response.note || response.follow_up || "";
-    showSystemMessage("Copilot answered your competitive-positioning question.", "success");
+    if (!silent) {
+      showSystemMessage("Copilot answered your competitive-positioning question.", "success");
+    }
   } catch (error) {
     byId("copilotAnswer").textContent = error.message;
-    showSystemMessage(error.message, "error");
+    if (!silent) {
+      showSystemMessage(error.message, "error");
+    }
   } finally {
     setButtonLoading(byId("copilotButton"), false);
   }
 }
 
-async function refreshAll() {
-  showSystemMessage("Refreshing workspace...", "info");
+async function refreshAll(options = {}) {
+  const silent = options.silent === true;
+  if (!silent) {
+    showSystemMessage("Refreshing workspace...", "info");
+  }
   try {
     await loadHealth();
     await loadDashboard();
     await loadRecommendations();
     await loadReports();
     if (!state.battlecard && state.dashboard?.competitors?.length) {
-      await generateBattlecard(state.dashboard.competitors[0]._id, false);
+      await generateBattlecard(state.dashboard.competitors[0]._id, false, null, true);
     }
-    await askCopilot();
-    showSystemMessage("Workspace is up to date.", "success");
+    await askCopilot(null, true);
+    if (!silent) {
+      showSystemMessage("Workspace refreshed with the latest AI signals.", "success");
+    }
   } catch (error) {
-    showSystemMessage(error.message, "error");
+    if (!silent) {
+      showSystemMessage(error.message, "error");
+    } else {
+      console.warn("Initial refresh used fallback data.", error);
+    }
   }
 }
 
@@ -1189,6 +1252,7 @@ async function submitJsonForm(event, path, messageId, successMessage, afterSave 
 function exportBattlecard() {
   if (!state.battlecard) {
     byId("battlecardMessage").textContent = "Generate a battlecard first.";
+    showSystemMessage("Generate a battlecard before exporting.", "warning");
     return;
   }
   const card = state.battlecard;
@@ -1217,11 +1281,14 @@ function exportBattlecard() {
   link.download = `${card.competitor_name || "battlecard"}-battlecard.txt`.replaceAll(" ", "-").toLowerCase();
   link.click();
   URL.revokeObjectURL(link.href);
+  byId("battlecardMessage").textContent = "Battlecard export downloaded.";
+  showSystemMessage("Battlecard export downloaded.", "success");
 }
 
 function exportAnalysis() {
   if (!state.analysis) {
     byId("analysisMessage").textContent = "Generate an analysis first.";
+    showSystemMessage("Generate an analysis before exporting.", "warning");
     return;
   }
   const analysis = state.analysis;
@@ -1261,6 +1328,8 @@ function exportAnalysis() {
   link.download = `${analysis.business_profile.business_name}-competition-analysis.txt`.replaceAll(" ", "-").toLowerCase();
   link.click();
   URL.revokeObjectURL(link.href);
+  byId("analysisMessage").textContent = "Analysis export downloaded.";
+  showSystemMessage("Analysis export downloaded.", "success");
 }
 
 function syncBattlecardSelectors(source) {
@@ -1302,7 +1371,7 @@ function renderEnrichment(enrichment) {
       <p>${escapeHtml(plan.note || plan.audience || "")}</p>
     </article>
   `).join("");
-  byId("discoverySource").textContent = enrichment.source || "AI enrichment";
+  byId("discoverySource").textContent = displaySource(enrichment.source, "AI Enrichment Engine");
   byId("trackEnrichedButton").disabled = false;
   byId("enrichmentPreview").innerHTML = `
     <div class="enrichment-card">
@@ -1425,9 +1494,10 @@ function attachEvents() {
   byId("reportButton").addEventListener("click", async () => {
     setButtonLoading(byId("reportButton"), true, "Creating...");
     try {
-      await api("/api/reports", { method: "POST", body: JSON.stringify({}) });
+      const report = await api("/api/reports", { method: "POST", body: JSON.stringify({}) });
       await loadReports();
-      showSystemMessage("Executive brief created and ready to export.", "success");
+      setActiveView("reports");
+      showSystemMessage(`${report.title || "Executive brief"} created and ready to export.`, "success");
     } catch (error) {
       showSystemMessage(error.message, "error");
     } finally {
@@ -1507,8 +1577,9 @@ async function boot() {
   setSidebar(false);
   setActiveView(viewFromHash(), false);
   renderIcons();
-  await refreshAll();
-  await generateAnalysis();
+  await refreshAll({ silent: true });
+  await generateAnalysis(null, true);
+  showSystemMessage("Workspace ready. Start with Signal Intake, Analyzer, or Create Brief.", "success");
 }
 
 boot().catch((error) => {

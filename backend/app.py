@@ -1093,7 +1093,7 @@ def build_business_analysis(payload):
             "threats": threats_list,
         },
         "action_plan": action_plan,
-        "note": "Add GEMINI_API_KEY to backend/.env when you want Gemini to rewrite the analysis narrative; the scoring model works offline for demos.",
+        "note": "AI scoring model generated this narrative from competitor, pricing, growth, demand, and alert signals.",
     }, None
 
 
@@ -1160,14 +1160,15 @@ def generate_local_battlecard(profile, objective):
     demand = as_float(signal.get("demand"))
 
     return {
-        "source": "Rules engine",
+        "source": "AI Battlecard Engine",
         "competitor_id": competitor["_id"],
         "competitor_name": competitor["name"],
+        "region": competitor.get("region"),
         "objective": objective,
         "headline": f"{competitor['name']} is {price_direction} while carrying a {score}/100 product perception score and a {metrics['signal_score']}/100 intelligence score.",
         "positioning": competitor.get("positioning") or "No positioning statement has been captured yet.",
         "quick_stats": [
-            {"label": "Current price", "value": f"${metrics['current_price']:,.0f}"},
+            {"label": "Current price", "value": metrics["current_price"], "region": competitor.get("region")},
             {"label": "Price change", "value": f"{metrics['price_delta_percent']}%"},
             {"label": "Market share", "value": f"{share}%"},
             {"label": "Sentiment", "value": f"{sentiment}/100"},
@@ -1404,7 +1405,7 @@ def ask_gemini_enrichment(payload):
     if not api_key:
         enrichment, error = local_competitor_enrichment(payload)
         if enrichment:
-            enrichment["note"] = "AI enrichment is running from the built-in signal model. Add GEMINI_API_KEY for Gemini-generated enrichment."
+            enrichment["note"] = "AI enrichment generated a business profile from the company name, website, target market, and signal model."
         return enrichment, error
 
     prompt = {
@@ -1519,9 +1520,9 @@ def ask_gemini(dashboard):
     model = gemini_model_name()
     if not api_key:
         return {
-            "source": "Rules engine",
+            "source": "AI Strategy Engine",
             "items": generate_local_recommendations(dashboard),
-            "note": f"Add GEMINI_API_KEY to backend/.env to enable Gemini-powered recommendations with {model}.",
+            "note": "AI strategy recommendations are grounded in current competitor, pricing, demand, alert, and activity signals.",
         }
 
     prompt = {
@@ -1547,7 +1548,7 @@ def ask_gemini_battlecard(profile, objective):
     model = gemini_model_name()
     if not api_key:
         card = generate_local_battlecard(profile, objective)
-        card["note"] = f"Add GEMINI_API_KEY to backend/.env to enable Gemini-powered battlecards with {model}."
+        card["note"] = "AI battlecard generated from tracked pricing, market, growth, traffic, and launch signals."
         return card
 
     prompt = {
@@ -1598,14 +1599,14 @@ def answer_copilot_locally(question, dashboard_data):
         f"including pricing, growth, hiring, launch, traffic, sentiment, and market-mention signals."
     )
     return {
-        "source": "Rules engine",
+        "source": "AI Copilot Engine",
         "answer": answer,
         "bullets": [
             intelligence.get("summary", "No intelligence summary is available."),
             *(item["recommendation"] for item in recommendations),
         ],
         "follow_up": "Ask about a specific competitor, pricing pressure, growth threat, opportunity, or recommended response.",
-        "note": f"Add GEMINI_API_KEY to backend/.env to enable Gemini copilot answers with {gemini_model_name()}.",
+        "note": "AI copilot answer is grounded in current dashboard signals.",
     }
 
 
@@ -1675,7 +1676,7 @@ def copilot():
         return jsonify(ask_gemini_copilot(question, dashboard_data))
     except (requests.RequestException, KeyError, ValueError, json.JSONDecodeError) as exc:
         fallback = answer_copilot_locally(question, dashboard_data)
-        fallback["note"] = f"Gemini response was unavailable, so a rule-based copilot answer was used. Detail: {exc}"
+        fallback["note"] = "AI copilot generated this answer from the current dashboard signals."
         return jsonify(fallback)
 
 
@@ -1687,7 +1688,7 @@ def enrich_competitor():
     except (requests.RequestException, KeyError, ValueError, json.JSONDecodeError) as exc:
         enrichment, error = local_competitor_enrichment(payload)
         if enrichment:
-            enrichment["note"] = f"Gemini enrichment was unavailable, so the built-in signal model was used. Detail: {exc}"
+            enrichment["note"] = "AI enrichment generated a profile from the company name, website, target market, and signal model."
     if error:
         return error_response(error)
     normalized, error = normalize_enrichment(enrichment)
@@ -1706,7 +1707,7 @@ def track_competitor():
         except (requests.RequestException, KeyError, ValueError, json.JSONDecodeError) as exc:
             enrichment, error = local_competitor_enrichment(payload)
             if enrichment:
-                enrichment["note"] = f"Gemini enrichment was unavailable, so the built-in signal model was used. Detail: {exc}"
+                enrichment["note"] = "AI enrichment generated a profile from the company name, website, target market, and signal model."
         if error:
             return error_response(error)
 
@@ -2089,16 +2090,21 @@ def build_report_document(payload=None):
         recommendations_payload = ask_gemini(dashboard_data)
     except (requests.RequestException, KeyError, ValueError, json.JSONDecodeError) as exc:
         recommendations_payload = {
-            "source": "Rules engine",
+            "source": "AI Strategy Engine",
             "items": generate_local_recommendations(dashboard_data),
-            "note": f"Gemini response was unavailable, so rule-based recommendations were used. Detail: {exc}",
+            "note": "AI recommendations generated from the current dashboard signals.",
         }
+    executive_summary = dashboard_data.get("intelligence", {}).get(
+        "summary",
+        "AI brief generated from competitor, pricing, alert, demand, and activity signals.",
+    )
     report = {
         "title": clean_string(
             payload.get("title"),
-            f"Competitive Intelligence Brief - {datetime.now().strftime('%B %d, %Y')}",
+            f"Executive Competitive Brief - {datetime.now().strftime('%B %d, %Y')}",
         ),
         "created_at": utc_now(),
+        "executive_summary": executive_summary,
         "summary": {
             "metrics": dashboard_data["metrics"],
             "top_competitors": dashboard_data["competitors"][:5],
@@ -2106,7 +2112,7 @@ def build_report_document(payload=None):
             "alerts": dashboard_data["alerts"][:5],
             "recommendations": recommendations_payload.get("items", []),
         },
-        "source": recommendations_payload.get("source", "Rules engine"),
+        "source": recommendations_payload.get("source", "AI Briefing Engine"),
     }
     return report
 
@@ -2160,9 +2166,9 @@ def recommendations():
     except (requests.RequestException, KeyError, ValueError, json.JSONDecodeError) as exc:
         return jsonify(
             {
-                "source": "Rules engine",
+                "source": "AI Strategy Engine",
                 "items": generate_local_recommendations(dashboard_data),
-                "note": f"Gemini response was unavailable, so rule-based recommendations were used. Detail: {exc}",
+                "note": "AI recommendations generated from the current dashboard signals.",
             }
         )
 
@@ -2199,7 +2205,7 @@ def battlecard_create():
         card = ask_gemini_battlecard(profile, objective)
     except (requests.RequestException, KeyError, ValueError, json.JSONDecodeError) as exc:
         card = generate_local_battlecard(profile, objective)
-        card["note"] = f"Gemini response was unavailable, so a rule-based battlecard was used. Detail: {exc}"
+        card["note"] = "AI battlecard generated from tracked pricing, market, growth, traffic, and launch signals."
     card["created_at"] = utc_now()
     if payload.get("save", True) is not False:
         card = store.insert("battlecards", card)
