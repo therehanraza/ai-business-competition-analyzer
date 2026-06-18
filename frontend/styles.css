@@ -1208,6 +1208,38 @@ li,
   height: fit-content;
 }
 
+.battlecard-guide {
+  display: grid;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.battlecard-guide div {
+  display: grid;
+  gap: 5px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.battlecard-guide div:last-child {
+  border-bottom: 0;
+}
+
+.battlecard-guide span {
+  color: #5eead4;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.battlecard-guide strong {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .workspace-grid {
   align-items: stretch;
 }
