@@ -538,7 +538,7 @@ ol {
 
 .feature-grid {
   grid-template-columns: minmax(300px, 0.65fr) minmax(0, 1.35fr);
-  align-items: start;
+  align-items: stretch;
 }
 
 .workspace-grid {
@@ -1201,11 +1201,12 @@ li,
 
 .feature-grid {
   grid-template-columns: minmax(340px, 0.48fr) minmax(0, 1.52fr);
+  align-items: stretch;
 }
 
 .battlecard-control,
 .battlecard-result {
-  height: fit-content;
+  height: auto;
 }
 
 .battlecard-guide {
